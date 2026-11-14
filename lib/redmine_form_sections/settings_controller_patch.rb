@@ -27,7 +27,10 @@ module RedmineFormSections
       @settings = settings
 
       # Afficher l'erreur et conserver le YAML saisi.
-      flash.now[:error] = e.message
+      flash.now[:error] = I18n.t(
+        e.translation_key,
+        **e.interpolation
+      )
 
       # Interrompre l'enregistrement.
       render 'settings/plugin', status: :unprocessable_entity

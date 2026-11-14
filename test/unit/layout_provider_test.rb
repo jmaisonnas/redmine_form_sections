@@ -69,7 +69,9 @@ class LayoutProviderTest < Minitest::Test
       RedmineFormSections::LayoutProvider.parse_config!(yaml)
     end
 
-    assert_match(/champ 1 est déclaré plusieurs fois/, error.message)
+    assert_equal :error_rfs_yaml_duplicate_field, error.translation_key
+    assert_equal 1, error.interpolation[:tracker_id]
+    assert_equal 1, error.interpolation[:field_id]
   end
 
   def test_same_field_can_be_used_by_different_trackers

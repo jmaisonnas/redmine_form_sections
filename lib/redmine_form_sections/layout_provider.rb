@@ -3,7 +3,16 @@ require 'yaml'
 module RedmineFormSections
   class LayoutProvider
 
-    class InvalidConfiguration < StandardError; end
+    class InvalidConfiguration < StandardError
+      attr_reader :translation_key, :interpolation
+
+      def initialize(translation_key, **interpolation)
+        @translation_key = translation_key
+        @interpolation = interpolation
+
+        super(translation_key.to_s)
+      end
+    end
 
     CONFIG_PATH = File.expand_path(
       '../../config/form_layouts.yml',
@@ -39,70 +48,89 @@ module RedmineFormSections
 
     def self.parse_config!(yaml_text)
       unless yaml_text.is_a?(String)
-        raise InvalidConfiguration, 'La configuration YAML doit être du texte.'
+        raise InvalidConfiguration.new(:error_rfs_yaml_not_text)
       end
 
       if yaml_text.strip.empty?
-        raise InvalidConfiguration, 'La configuration YAML est vide.'
+        raise InvalidConfiguration.new(:error_rfs_yaml_empty)
       end
 
       begin
         config = YAML.safe_load(yaml_text)
       rescue Psych::Exception => e
-        raise InvalidConfiguration, "Syntaxe YAML incorrecte : #{e.message}"
+        raise InvalidConfiguration.new(
+          :error_rfs_yaml_syntax,
+          details: e.message
+        )
       end
 
       unless config.is_a?(Hash) && config['trackers'].is_a?(Hash)
-        raise InvalidConfiguration, 'La configuration doit contenir une clé "trackers".'
+        raise InvalidConfiguration.new(:error_rfs_yaml_missing_trackers)
       end
 
       config['trackers'].each do |tracker_id, sections|
 
         unless tracker_id.is_a?(Integer) && tracker_id.positive?
-          raise InvalidConfiguration, "Identifiant de tracker incorrect : #{tracker_id.inspect}"
+          raise InvalidConfiguration.new(
+            :error_rfs_yaml_invalid_tracker,
+            tracker_id: tracker_id.inspect
+          )
         end
 
         unless sections.is_a?(Array)
-          raise InvalidConfiguration, "Le tracker #{tracker_id} doit contenir une liste de sections."
+          raise InvalidConfiguration.new(
+            :error_rfs_yaml_invalid_sections,
+            tracker_id: tracker_id
+          )
         end
 
         sections.each_with_index do |section, index|
 
           unless section.is_a?(Hash) &&
-                section['title'].is_a?(String) &&
-                !section['title'].strip.empty?
+                 section['title'].is_a?(String) &&
+                 !section['title'].strip.empty?
 
-            raise InvalidConfiguration,
-                  "La section #{index + 1} du tracker #{tracker_id} doit avoir un titre."
+            raise InvalidConfiguration.new(
+              :error_rfs_yaml_missing_title,
+              tracker_id: tracker_id,
+              index: index + 1
+            )
           end
 
           # La colonne gauche est toujours obligatoire.
           unless section.key?('left')
-            raise InvalidConfiguration,
-                  "Tracker #{tracker_id}, section « #{section['title']} » : " \
-                  "la colonne left est obligatoire."
+            raise InvalidConfiguration.new(
+              :error_rfs_yaml_left_required,
+              tracker_id: tracker_id,
+              title: section['title']
+            )
           end
 
-          # La présence de right détermine si la section possède deux colonnes.
+          # La présence de right détermine le nombre de colonnes.
           columns = section.key?('right') ? %w[left right] : %w[left]
 
           columns.each do |column|
             fields = section[column]
 
             unless fields.is_a?(Array) &&
-                  fields.all? { |id| id.is_a?(Integer) && id.positive? }
+                   fields.all? { |id| id.is_a?(Integer) && id.positive? }
 
-              raise InvalidConfiguration,
-                    "Tracker #{tracker_id}, section « #{section['title']} » : " \
-                    "la colonne #{column} doit contenir une liste d'identifiants positifs."
+              raise InvalidConfiguration.new(
+                :error_rfs_yaml_invalid_column,
+                tracker_id: tracker_id,
+                title: section['title'],
+                column: column
+              )
             end
           end
 
-          # Une section sans aucun champ configuré n'a pas d'utilité.
+          # Ne pas accepter une section sans aucun champ configuré.
           if columns.all? { |column| section[column].empty? }
-            raise InvalidConfiguration,
-                  "Tracker #{tracker_id}, section « #{section['title']} » : " \
-                  "la section doit contenir au moins un champ."
+            raise InvalidConfiguration.new(
+              :error_rfs_yaml_empty_section,
+              tracker_id: tracker_id,
+              title: section['title']
+            )
           end
         end
 
@@ -119,8 +147,11 @@ module RedmineFormSections
         end&.first
 
         if duplicate_id
-          raise InvalidConfiguration,
-                "Tracker #{tracker_id} : le champ #{duplicate_id} est déclaré plusieurs fois."
+          raise InvalidConfiguration.new(
+            :error_rfs_yaml_duplicate_field,
+            tracker_id: tracker_id,
+            field_id: duplicate_id
+          )
         end
       end
 
