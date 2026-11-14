@@ -40,26 +40,49 @@
   }
 
   // Mémoriser les champs personnalisés natifs et leur ordre
+  // Les champs pleine largeur sont directement sous #attributes.
   const originalFields = [
     ...attributes.querySelectorAll(
-      '.splitcontentleft > p, .splitcontentright > p'
+      '.splitcontentleft > p, .splitcontentright > p, :scope > p'
     )
   ].filter(p =>
-    p.querySelector('[id^="issue_custom_field_values_"]')
+    p.querySelector('[name^="issue[custom_field_values]"]')
+  );
+
+  // Identifier les champs initialement affichés en pleine largeur.
+  const fullWidthFields = new Set(
+    originalFields.filter(p => p.parentElement === attributes)
   );
 
   // Retrouver un champ à partir de son identifiant Redmine
   function findField(id) {
     return originalFields.find(p =>
-      p.querySelector(`#issue_custom_field_values_${id}`)
+      p.querySelector(
+        `[name^="issue[custom_field_values][${id}]"]`
+      )
     ) ?? null;
   }
 
   // Créer une section à partir de champs HTML existants
   function addSection(title, leftFields, rightFields, twoColumns) {
 
-    // Ne jamais créer de section vide
-    if (!leftFields.length && !rightFields.length) return;
+    // Séparer les champs classiques des champs pleine largeur.
+    const normalLeft = leftFields.filter(
+      field => !fullWidthFields.has(field)
+    );
+
+    const normalRight = rightFields.filter(
+      field => !fullWidthFields.has(field)
+    );
+
+    const fullWidth = [...leftFields, ...rightFields].filter(
+      field => fullWidthFields.has(field)
+    );
+
+    // Ne jamais créer de section vide.
+    if (!normalLeft.length && !normalRight.length && !fullWidth.length) {
+      return;
+    }
 
     const fieldset = document.createElement('fieldset');
     fieldset.className = 'rfs-section';
@@ -67,32 +90,42 @@
     const legend = document.createElement('legend');
     legend.textContent = title;
 
-    const splitcontent = document.createElement('div');
-    splitcontent.className = 'splitcontent';
+    fieldset.appendChild(legend);
 
-    // La colonne gauche existe toujours.
-    const columns = [
-      ['splitcontentleft', leftFields]
-    ];
+    // Créer les colonnes uniquement si elles contiennent
+    // au moins un champ classique.
+    if (normalLeft.length || normalRight.length) {
 
-    // La colonne droite existe uniquement pour une section à deux colonnes.
-    if (twoColumns) {
-      columns.push(['splitcontentright', rightFields]);
-    }
+      const splitcontent = document.createElement('div');
+      splitcontent.className = 'splitcontent';
 
-    for (const [className, fields] of columns) {
-      const column = document.createElement('div');
-      column.className = className;
+      const columns = [
+        ['splitcontentleft', normalLeft]
+      ];
 
-      for (const field of fields) {
-        column.appendChild(field);
+      if (twoColumns) {
+        columns.push(['splitcontentright', normalRight]);
       }
 
-      splitcontent.appendChild(column);
+      for (const [className, fields] of columns) {
+        const column = document.createElement('div');
+        column.className = className;
+
+        for (const field of fields) {
+          column.appendChild(field);
+        }
+
+        splitcontent.appendChild(column);
+      }
+
+      fieldset.appendChild(splitcontent);
     }
 
-    fieldset.appendChild(legend);
-    fieldset.appendChild(splitcontent);
+    // Les champs pleine largeur sont placés sous les colonnes.
+    for (const field of fullWidth) {
+      fieldset.appendChild(field);
+    }
+
     container.appendChild(fieldset);
   }
 
@@ -129,11 +162,26 @@
 
   // 3. Les répartir dans la section "Autres champs"
   if (remainingFields.length) {
-    const leftCount = Math.ceil(remainingFields.length / 2);
+
+    // Champs classiques à répartir sur deux colonnes.
+    const normalFields = remainingFields.filter(
+      field => !fullWidthFields.has(field)
+    );
+
+    // Champs devant rester sur toute la largeur.
+    const fullWidth = remainingFields.filter(
+      field => fullWidthFields.has(field)
+    );
+
+    const leftCount = Math.ceil(normalFields.length / 2);
+
     addSection(
       "<%= j(l(:label_rfs_other_fields)) %>",
-      remainingFields.slice(0, leftCount),
-      remainingFields.slice(leftCount),
+      [
+        ...normalFields.slice(0, leftCount),
+        ...fullWidth
+      ],
+      normalFields.slice(leftCount),
       true
     );
   }

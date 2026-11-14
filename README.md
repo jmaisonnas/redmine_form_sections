@@ -182,6 +182,27 @@ Une section doit déclarer au moins un champ.
 Un même champ ne peut pas être déclaré plusieurs fois
 pour un même tracker.
 
+### Champs personnalisés en pleine largeur
+
+Le plugin respecte l'option native de Redmine permettant d'afficher
+un champ personnalisé sur toute la largeur du formulaire.
+
+Lorsqu'un champ est configuré en pleine largeur dans Redmine :
+
+- Il peut être déclaré indifféremment dans `left` ou `right` dans le YAML.
+- Il est affiché sous les colonnes de la section correspondante,
+  sur toute la largeur disponible.
+- S'il n'est déclaré dans aucune section, il est placé à la fin
+  de la section automatique « Autres champs ».
+- Si une section contient uniquement des champs en pleine largeur,
+  aucune structure de colonnes inutile n'est créée.
+
+Le plugin conserve les contrôles HTML générés par Redmine,
+y compris les éditeurs de texte avec formatage.
+
+Cette personnalisation concerne exclusivement les champs personnalisés.
+Les champs natifs de Redmine ne sont pas réorganisés.
+
 ## Export de la configuration
 
 L'écran d'administration permet de télécharger
