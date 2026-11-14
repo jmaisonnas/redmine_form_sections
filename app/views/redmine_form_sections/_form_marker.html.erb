@@ -21,127 +21,111 @@
 
 <script>
 (() => {
-
-  // ==========================================================
-  // CONFIGURATION DES FORMULAIRES
-  // ==========================================================
-
+  // Configuration centrale, par tracker
   const configurations = {
     1: [
-      {
-        title: 'Application',
-        left: [1],
-        right: [2]
-      },
-      {
-        title: 'Client',
-        left: [3],
-        right: [4]
-      }
+      { title: 'Application', left: [1], right: [2] },
+      { title: 'Client', left: [3], right: [4] }
     ]
   };
-
-  // ==========================================================
-  // INITIALISATION
-  // ==========================================================
 
   const attributes = document.getElementById('attributes');
   const container = document.getElementById('rfs-sections');
 
-  if (!attributes || !container) {
-    return;
-  }
+  if (!attributes || !container) return;
 
   const trackerId = container.dataset.trackerId;
-
-  // Configuration centrale du tracker.
   const sections = configurations[trackerId];
 
-  // Aucune configuration : on conserve le formulaire natif.
+  // Aucun paramétrage pour ce tracker : formulaire natif
   if (!sections) {
     container.remove();
     return;
   }
 
-  attributes.appendChild(container);  
+  // Mémoriser les champs personnalisés natifs et leur ordre
+  const originalFields = [
+    ...attributes.querySelectorAll(
+      '.splitcontentleft > p, .splitcontentright > p'
+    )
+  ].filter(p =>
+    p.querySelector('[id^="issue_custom_field_values_"]')
+  );
 
-  // ==========================================================
-  // RECHERCHE DES CHAMPS
-  // ==========================================================
-
+  // Retrouver un champ à partir de son identifiant Redmine
   function findField(id) {
-    const control = attributes.querySelector(
-      `#issue_custom_field_values_${id}`
-    );
-
-    return control?.closest('p') ?? null;
+    return originalFields.find(p =>
+      p.querySelector(`#issue_custom_field_values_${id}`)
+    ) ?? null;
   }
 
-  // ==========================================================
-  // CONSTRUCTION DES SECTIONS
-  // ==========================================================
+  // Créer une section à partir de champs HTML existants
+  function addSection(title, leftFields, rightFields) {
 
-  for (const section of sections) {
+    // Ne jamais créer de section vide
+    if (!leftFields.length && !rightFields.length) return;
 
-    const leftColumn = document.createElement('div');
-    leftColumn.className = 'splitcontentleft';
-
-    const rightColumn = document.createElement('div');
-    rightColumn.className = 'splitcontentright';
-
-    // Placement des champs de gauche.
-    for (const id of section.left) {
-      const field = findField(id);
-
-      if (field) {
-        leftColumn.appendChild(field);
-      }
-    }
-
-    // Placement des champs de droite.
-    for (const id of section.right) {
-      const field = findField(id);
-
-      if (field) {
-        rightColumn.appendChild(field);
-      }
-    }
-
-    // Aucun champ trouvé : on ignore cette section.
-    if (!leftColumn.children.length && !rightColumn.children.length) {
-      continue;
-    }
-
-    // Création du conteneur de section.
     const fieldset = document.createElement('fieldset');
     fieldset.className = 'rfs-section';
 
     const legend = document.createElement('legend');
-    legend.textContent = section.title;
+    legend.textContent = title;
 
-    // Structure native de Redmine pour les deux colonnes.
     const splitcontent = document.createElement('div');
     splitcontent.className = 'splitcontent';
 
-    if (leftColumn.children.length) {
-      splitcontent.appendChild(leftColumn);
-    }
+    for (const [className, fields] of [
+      ['splitcontentleft', leftFields],
+      ['splitcontentright', rightFields]
+    ]) {
+      if (!fields.length) continue;
 
-    if (rightColumn.children.length) {
-      splitcontent.appendChild(rightColumn);
+      const column = document.createElement('div');
+      column.className = className;
+
+      for (const field of fields) {
+        column.appendChild(field);
+      }
+
+      splitcontent.appendChild(column);
     }
 
     fieldset.appendChild(legend);
     fieldset.appendChild(splitcontent);
-
     container.appendChild(fieldset);
   }
 
-  // Aucune section créée : nettoyage.
+  // Conserver le conteneur dans la zone native des attributs
+  attributes.appendChild(container);
+
+  // 1. Construire les sections configurées
+  for (const section of sections) {
+    const leftFields = section.left.map(findField).filter(Boolean);
+    const rightFields = section.right.map(findField).filter(Boolean);
+
+    addSection(section.title, leftFields, rightFields);
+  }
+
+  // 2. Identifier les champs non affectés
+  const remainingFields = originalFields.filter(field =>
+    !container.contains(field)
+  );
+
+  // 3. Les répartir dans la section "Autres champs"
+  if (remainingFields.length) {
+    const leftCount = Math.ceil(remainingFields.length / 2);
+
+    addSection(
+      "<%= j(l(:label_rfs_other_fields)) %>",
+      remainingFields.slice(0, leftCount),
+      remainingFields.slice(leftCount)
+    );
+  }
+
+  // Supprimer le conteneur si aucune section n'a été créée
   if (!container.children.length) {
     container.remove();
   }
-
 })();
 </script>
 <% end %>
