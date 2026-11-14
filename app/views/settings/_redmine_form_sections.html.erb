@@ -1,0 +1,20 @@
+<p>
+  <label for="rfs_layouts_yaml">
+    <%= l(:label_rfs_layouts_yaml) %>
+  </label>
+</p>
+
+<p>
+  <%= text_area_tag(
+    'settings[layouts_yaml]',
+    @settings['layouts_yaml'],
+    id: 'rfs_layouts_yaml',
+    rows: 16,
+    cols: 100,
+    style: 'width: 95%; font-family: monospace;'
+  ) %>
+</p>
+
+<p class="info">
+  <%= l(:text_rfs_layouts_yaml_help) %>
+</p>

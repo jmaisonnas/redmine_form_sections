@@ -1,3 +1,5 @@
 en:
   project_module_redmine_form_sections: "Form customization"
   label_rfs_other_fields: "Other fields"
+  label_rfs_layouts_yaml: "Form configuration"
+  text_rfs_layouts_yaml_help: "Central YAML configuration by tracker (temporary interface)."

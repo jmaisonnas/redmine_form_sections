@@ -8,6 +8,12 @@ Redmine::Plugin.register :redmine_form_sections do
   project_module :redmine_form_sections do
     permission :use_redmine_form_sections, {}, public: true
   end
+  
+  settings default: {
+    'layouts_yaml' => File.read(
+      File.join(__dir__, 'config', 'form_layouts.yml')
+    )
+  }, partial: 'settings/redmine_form_sections'
 end
 
 require_relative 'lib/redmine_form_sections/hooks'

@@ -28,4 +28,26 @@ class LayoutProviderTest < Minitest::Test
     assert_nil sections
   end
 
+  def test_invalid_yaml_returns_nil
+    invalid_yaml = "trackers:\n  1: ["
+  
+    config = RedmineFormSections::LayoutProvider.parse_config(invalid_yaml)
+  
+    assert_nil config
+  end
+
+  def test_invalid_structure_returns_nil
+    invalid_yaml = <<~YAML
+      trackers:
+        1:
+          - title: "Client"
+            left: "incorrect"
+            right: [3]
+    YAML
+  
+    config = RedmineFormSections::LayoutProvider.parse_config(invalid_yaml)
+  
+    assert_nil config
+  end
+  
 end
