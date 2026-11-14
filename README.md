@@ -216,4 +216,15 @@ normal du plugin.
 
 ## Auteur
 
-Julien
+Julien Maisonnas
+
+## Licence
+
+Copyright (C) 2026 Julien Maisonnas
+
+Redmine Form Sections est distribué sous les termes de la
+GNU General Public License, version 2 ou ultérieure
+(GPL-2.0-or-later).
+
+Voir le fichier [LICENSE](LICENSE) pour le texte intégral
+de la licence.

@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Julien Maisonnas
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 Redmine::Plugin.register :redmine_form_sections do
   name 'Redmine Form Sections'
   author 'Julien'
