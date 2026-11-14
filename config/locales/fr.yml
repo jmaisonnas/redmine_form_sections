@@ -16,3 +16,4 @@ fr:
   error_rfs_yaml_invalid_column: "Tracker %{tracker_id}, section « %{title} » : la colonne %{column} doit contenir une liste d'identifiants positifs."
   error_rfs_yaml_empty_section: "Tracker %{tracker_id}, section « %{title} » : la section doit contenir au moins un champ."
   error_rfs_yaml_duplicate_field: "Tracker %{tracker_id} : le champ %{field_id} est déclaré plusieurs fois."
+  error_rfs_yaml_unknown_section_key: "Tracker %{tracker_id}, section « %{title} » : propriété inconnue « %{key} »."

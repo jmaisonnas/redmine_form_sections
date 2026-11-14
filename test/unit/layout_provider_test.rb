@@ -92,5 +92,27 @@ class LayoutProviderTest < Minitest::Test
     assert_equal [1], config['trackers'][2][0]['left']
   end
 
+  def test_rejects_unknown_section_property
+    yaml = <<~YAML
+      trackers:
+        1:
+          - title: "Application"
+            left: [1]
+            rigth: [2]
+    YAML
+
+    error = assert_raises(
+      RedmineFormSections::LayoutProvider::InvalidConfiguration
+    ) do
+      RedmineFormSections::LayoutProvider.parse_config!(yaml)
+    end
+
+    assert_equal(
+      :error_rfs_yaml_unknown_section_key,
+      error.translation_key
+    )
+
+    assert_equal 'rigth', error.interpolation[:key]
+  end
 
 end

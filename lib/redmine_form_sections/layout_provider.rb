@@ -97,6 +97,19 @@ module RedmineFormSections
             )
           end
 
+          # Refuser les propriétés inconnues dans une section.
+          allowed_keys = %w[title left right]
+          unknown_keys = section.keys - allowed_keys
+
+          unless unknown_keys.empty?
+            raise InvalidConfiguration.new(
+              :error_rfs_yaml_unknown_section_key,
+              tracker_id: tracker_id,
+              title: section['title'],
+              key: unknown_keys.first.to_s
+            )
+          end
+
           # La colonne gauche est toujours obligatoire.
           unless section.key?('left')
             raise InvalidConfiguration.new(

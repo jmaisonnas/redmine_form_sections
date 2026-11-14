@@ -34,7 +34,7 @@
   const sections = JSON.parse(container.dataset.sections || 'null');
 
   // Aucun paramétrage pour ce tracker : formulaire natif
-  if (!sections) {
+  if (!Array.isArray(sections) || sections.length === 0) {
     container.remove();
     return;
   }
