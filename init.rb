@@ -18,3 +18,12 @@ end
 
 require_relative 'lib/redmine_form_sections/hooks'
 require_relative 'lib/redmine_form_sections/layout_provider'
+require_relative 'lib/redmine_form_sections/settings_controller_patch'
+
+unless SettingsController.included_modules.include?(
+  RedmineFormSections::SettingsControllerPatch
+)
+  SettingsController.include(
+    RedmineFormSections::SettingsControllerPatch
+  )
+end

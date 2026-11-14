@@ -56,7 +56,7 @@
   }
 
   // Créer une section à partir de champs HTML existants
-  function addSection(title, leftFields, rightFields) {
+  function addSection(title, leftFields, rightFields, twoColumns) {
 
     // Ne jamais créer de section vide
     if (!leftFields.length && !rightFields.length) return;
@@ -70,12 +70,17 @@
     const splitcontent = document.createElement('div');
     splitcontent.className = 'splitcontent';
 
-    for (const [className, fields] of [
-      ['splitcontentleft', leftFields],
-      ['splitcontentright', rightFields]
-    ]) {
-      if (!fields.length) continue;
+    // La colonne gauche existe toujours.
+    const columns = [
+      ['splitcontentleft', leftFields]
+    ];
 
+    // La colonne droite existe uniquement pour une section à deux colonnes.
+    if (twoColumns) {
+      columns.push(['splitcontentright', rightFields]);
+    }
+
+    for (const [className, fields] of columns) {
       const column = document.createElement('div');
       column.className = className;
 
@@ -93,13 +98,28 @@
 
   // Conserver le conteneur dans la zone native des attributs
   attributes.appendChild(container);
-
+  
   // 1. Construire les sections configurées
   for (const section of sections) {
-    const leftFields = section.left.map(findField).filter(Boolean);
-    const rightFields = section.right.map(findField).filter(Boolean);
 
-    addSection(section.title, leftFields, rightFields);
+    // Deux colonnes si right est explicitement déclaré.
+    const twoColumns = Object.prototype.hasOwnProperty.call(
+      section,
+      'right'
+    );
+
+    const leftFields = section.left.map(findField).filter(Boolean);
+
+    const rightFields = twoColumns
+      ? section.right.map(findField).filter(Boolean)
+      : [];
+
+    addSection(
+      section.title,
+      leftFields,
+      rightFields,
+      twoColumns
+    );
   }
 
   // 2. Identifier les champs non affectés
@@ -110,11 +130,11 @@
   // 3. Les répartir dans la section "Autres champs"
   if (remainingFields.length) {
     const leftCount = Math.ceil(remainingFields.length / 2);
-
     addSection(
       "<%= j(l(:label_rfs_other_fields)) %>",
       remainingFields.slice(0, leftCount),
-      remainingFields.slice(leftCount)
+      remainingFields.slice(leftCount),
+      true
     );
   }
 

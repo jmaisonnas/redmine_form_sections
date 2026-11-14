@@ -3,6 +3,8 @@ require 'yaml'
 module RedmineFormSections
   class LayoutProvider
 
+    class InvalidConfiguration < StandardError; end
+
     CONFIG_PATH = File.expand_path(
       '../../config/form_layouts.yml',
       __dir__
@@ -30,42 +32,99 @@ module RedmineFormSections
     end
 
     def self.parse_config(yaml_text)
-      return nil unless yaml_text.is_a?(String)
-      return nil if yaml_text.strip.empty?
-
-      config = YAML.safe_load(yaml_text)
-
-      return nil unless config.is_a?(Hash)
-
-      trackers = config['trackers']
-
-      return nil unless trackers.is_a?(Hash)
-
-      valid = trackers.all? do |tracker_id, sections|
-
-        tracker_id.is_a?(Integer) &&
-          tracker_id.positive? &&
-          sections.is_a?(Array) &&
-          sections.all? do |section|
-
-            section.is_a?(Hash) &&
-              section['title'].is_a?(String) &&
-              !section['title'].strip.empty? &&
-              %w[left right].all? do |column|
-
-                section[column].is_a?(Array) &&
-                  section[column].all? do |field_id|
-                    field_id.is_a?(Integer) && field_id.positive?
-                  end
-              end
-          end
-      end
-
-      valid ? config : nil
-
-    rescue Psych::Exception
+      parse_config!(yaml_text)
+    rescue InvalidConfiguration
       nil
     end
 
+    def self.parse_config!(yaml_text)
+      unless yaml_text.is_a?(String)
+        raise InvalidConfiguration, 'La configuration YAML doit être du texte.'
+      end
+
+      if yaml_text.strip.empty?
+        raise InvalidConfiguration, 'La configuration YAML est vide.'
+      end
+
+      begin
+        config = YAML.safe_load(yaml_text)
+      rescue Psych::Exception => e
+        raise InvalidConfiguration, "Syntaxe YAML incorrecte : #{e.message}"
+      end
+
+      unless config.is_a?(Hash) && config['trackers'].is_a?(Hash)
+        raise InvalidConfiguration, 'La configuration doit contenir une clé "trackers".'
+      end
+
+      config['trackers'].each do |tracker_id, sections|
+
+        unless tracker_id.is_a?(Integer) && tracker_id.positive?
+          raise InvalidConfiguration, "Identifiant de tracker incorrect : #{tracker_id.inspect}"
+        end
+
+        unless sections.is_a?(Array)
+          raise InvalidConfiguration, "Le tracker #{tracker_id} doit contenir une liste de sections."
+        end
+
+        sections.each_with_index do |section, index|
+
+          unless section.is_a?(Hash) &&
+                section['title'].is_a?(String) &&
+                !section['title'].strip.empty?
+
+            raise InvalidConfiguration,
+                  "La section #{index + 1} du tracker #{tracker_id} doit avoir un titre."
+          end
+
+          # La colonne gauche est toujours obligatoire.
+          unless section.key?('left')
+            raise InvalidConfiguration,
+                  "Tracker #{tracker_id}, section « #{section['title']} » : " \
+                  "la colonne left est obligatoire."
+          end
+
+          # La présence de right détermine si la section possède deux colonnes.
+          columns = section.key?('right') ? %w[left right] : %w[left]
+
+          columns.each do |column|
+            fields = section[column]
+
+            unless fields.is_a?(Array) &&
+                  fields.all? { |id| id.is_a?(Integer) && id.positive? }
+
+              raise InvalidConfiguration,
+                    "Tracker #{tracker_id}, section « #{section['title']} » : " \
+                    "la colonne #{column} doit contenir une liste d'identifiants positifs."
+            end
+          end
+
+          # Une section sans aucun champ configuré n'a pas d'utilité.
+          if columns.all? { |column| section[column].empty? }
+            raise InvalidConfiguration,
+                  "Tracker #{tracker_id}, section « #{section['title']} » : " \
+                  "la section doit contenir au moins un champ."
+          end
+        end
+
+        # Rassembler les champs de toutes les sections du tracker.
+        field_ids = sections.flat_map do |section|
+          section['left'] + (section['right'] || [])
+        end
+
+        # Rechercher un identifiant présent plusieurs fois.
+        grouped_ids = field_ids.group_by(&:itself)
+
+        duplicate_id = grouped_ids.find do |_id, occurrences|
+          occurrences.length > 1
+        end&.first
+
+        if duplicate_id
+          raise InvalidConfiguration,
+                "Tracker #{tracker_id} : le champ #{duplicate_id} est déclaré plusieurs fois."
+        end
+      end
+
+      config
+    end
   end
 end

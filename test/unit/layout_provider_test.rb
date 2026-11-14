@@ -44,10 +44,51 @@ class LayoutProviderTest < Minitest::Test
             left: "incorrect"
             right: [3]
     YAML
-  
+
     config = RedmineFormSections::LayoutProvider.parse_config(invalid_yaml)
-  
+
     assert_nil config
   end
-  
+
+  def test_duplicate_field_in_same_tracker_is_rejected
+    yaml = <<~YAML
+      trackers:
+        1:
+          - title: Application
+            left: [1, 2]
+            right: [3]
+
+          - title: Client
+            left: [4]
+            right: [1]
+    YAML
+
+    error = assert_raises(
+      RedmineFormSections::LayoutProvider::InvalidConfiguration
+    ) do
+      RedmineFormSections::LayoutProvider.parse_config!(yaml)
+    end
+
+    assert_match(/champ 1 est déclaré plusieurs fois/, error.message)
+  end
+
+  def test_same_field_can_be_used_by_different_trackers
+    yaml = <<~YAML
+      trackers:
+        1:
+          - title: Application
+            left: [1]
+
+        2:
+          - title: Assistance
+            left: [1]
+    YAML
+
+    config = RedmineFormSections::LayoutProvider.parse_config!(yaml)
+
+    assert_equal [1], config['trackers'][1][0]['left']
+    assert_equal [1], config['trackers'][2][0]['left']
+  end
+
+
 end
