@@ -27,7 +27,10 @@ Il ne modifie ni leur définition ni leurs valeurs.
 
 ### Comportement
 
-- Un tracker sans configuration conserve le formulaire Redmine natif.
+- Un tracker absent de la configuration conserve le formulaire
+  Redmine natif.
+- Un tracker déclaré avec une liste de sections vide (`1: []`)
+  conserve également le formulaire natif.
 - Une section sans champ présent dans le formulaire n'est pas affichée.
 - Les champs non affectés à une section sont regroupés dans
   une section "Autres champs", lorsqu'ils sont présents.
@@ -76,6 +79,16 @@ Accéder à :
 **Administration > Plugins > Redmine Form Sections > Configurer**
 
 La disposition des champs personnalisés est définie au format YAML.
+
+La configuration enregistrée dans les paramètres du plugin
+est prioritaire.
+
+Le fichier `config/form_layouts.yml` fournit la configuration
+initiale et sert de repli lorsqu'aucune configuration enregistrée
+n'est exploitable.
+
+La configuration est commune à tous les projets utilisant
+un même tracker.
 
 ### Exemple de configuration
 
@@ -167,20 +180,11 @@ Une section doit déclarer au moins un champ personnalisé.
 Un même champ personnalisé ne peut pas être déclaré plusieurs
 fois pour un même tracker.
 
-### Organisation des colonnes
+Chaque section doit posséder un titre (`title`) non vide.
 
-Si `right` est déclaré, la section utilise deux colonnes,
-même si l'une des listes est vide.
-
-Si seul `left` est déclaré, la section utilise une colonne
-sur toute la largeur disponible.
-
-La colonne `left` est obligatoire.
-
-Une section doit déclarer au moins un champ.
-
-Un même champ ne peut pas être déclaré plusieurs fois
-pour un même tracker.
+Seules les propriétés `title`, `left` et `right` sont autorisées
+dans une section. Toute propriété inconnue provoque une erreur
+de validation.
 
 ### Champs personnalisés en pleine largeur
 
