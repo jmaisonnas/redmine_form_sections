@@ -1,4 +1,5 @@
-<div id="rfs-sections"></div>
+<% if @issue.project&.module_enabled?('redmine_form_sections') %>
+<div id="rfs-sections" data-project="<%= @issue.project&.identifier %>"></div>
 
 <style>
   #rfs-sections:empty {
@@ -20,11 +21,6 @@
 
 <script>
 (() => {
-  // Pour l'instant, notre démonstration concerne uniquement le projet LAB.
-  if (window.location.pathname !== '/projects/lab-formulaires/issues/new') {
-    return;
-  }
-
   // Configuration temporaire des sections.
   const sections = [
     { title: 'Application', fieldIds: [1, 2] },
@@ -34,7 +30,7 @@
   const attributes = document.getElementById('attributes');
   const container = document.getElementById('rfs-sections');
 
-  if (!attributes || !container) {
+  if (!attributes || !container || container.dataset.project !== 'lab-formulaires') {
     return;
   }
 
@@ -75,3 +71,4 @@
   }
 })();
 </script>
+<% end %>
