@@ -2,6 +2,7 @@ en:
   project_module_redmine_form_sections: "Form customization"
   label_rfs_other_fields: "Other fields"
   label_rfs_layouts_yaml: "Form configuration"
+  label_rfs_export_yaml: "Export YAML configuration"
   text_rfs_layouts_yaml_help: "Define sections and field layout for each tracker using YAML."
 
   error_rfs_yaml_not_text: "The YAML configuration must be text."
