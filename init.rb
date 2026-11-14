@@ -11,3 +11,4 @@ Redmine::Plugin.register :redmine_form_sections do
 end
 
 require_relative 'lib/redmine_form_sections/hooks'
+require_relative 'lib/redmine_form_sections/layout_provider'

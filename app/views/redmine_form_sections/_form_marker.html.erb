@@ -1,5 +1,10 @@
 <% if @issue.project&.module_enabled?('redmine_form_sections') %>
-<div id="rfs-sections" data-project-id="<%= @issue.project_id %>" data-tracker-id="<%= @issue.tracker_id %>"></div>
+<% sections = RedmineFormSections::LayoutProvider.for_issue(@issue) %>
+
+<div id="rfs-sections"
+     data-project-id="<%= @issue.project_id %>"
+     data-tracker-id="<%= @issue.tracker_id %>"
+     data-sections="<%= sections.to_json %>"></div>
 
 <style>
   #rfs-sections:empty {
@@ -21,21 +26,12 @@
 
 <script>
 (() => {
-  // Configuration centrale, par tracker
-  const configurations = {
-    1: [
-      { title: 'Application', left: [1], right: [2] },
-      { title: 'Client', left: [3], right: [4] }
-    ]
-  };
-
   const attributes = document.getElementById('attributes');
   const container = document.getElementById('rfs-sections');
 
   if (!attributes || !container) return;
 
-  const trackerId = container.dataset.trackerId;
-  const sections = configurations[trackerId];
+  const sections = JSON.parse(container.dataset.sections || 'null');
 
   // Aucun paramétrage pour ce tracker : formulaire natif
   if (!sections) {
