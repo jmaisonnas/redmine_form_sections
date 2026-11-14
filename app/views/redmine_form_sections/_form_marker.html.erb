@@ -1,0 +1,77 @@
+<div id="rfs-sections"></div>
+
+<style>
+  #rfs-sections:empty {
+    display: none;
+  }
+
+  #rfs-sections .rfs-section {
+    border: 1px solid #c5d0d8;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 12px 0;
+  }
+
+  #rfs-sections .rfs-section legend {
+    font-weight: bold;
+    padding: 0 8px;
+  }
+</style>
+
+<script>
+(() => {
+  // Pour l'instant, notre démonstration concerne uniquement le projet LAB.
+  if (window.location.pathname !== '/projects/lab-formulaires/issues/new') {
+    return;
+  }
+
+  // Configuration temporaire des sections.
+  const sections = [
+    { title: 'Application', fieldIds: [1, 2] },
+    { title: 'Client', fieldIds: [3, 4] }
+  ];
+
+  const attributes = document.getElementById('attributes');
+  const container = document.getElementById('rfs-sections');
+
+  if (!attributes || !container) {
+    return;
+  }
+
+  for (const section of sections) {
+
+    // Recherche des conteneurs HTML des champs présents.
+    const fields = section.fieldIds
+      .map(id => attributes.querySelector(
+        `#issue_custom_field_values_${id}`
+      )?.closest('p'))
+      .filter(Boolean);
+
+    // Aucun champ présent : on ne crée pas la section.
+    if (fields.length === 0) {
+      continue;
+    }
+
+    // Création de la section.
+    const fieldset = document.createElement('fieldset');
+    fieldset.className = 'rfs-section';
+
+    const legend = document.createElement('legend');
+    legend.textContent = section.title;
+
+    fieldset.appendChild(legend);
+
+    // Déplacement des conteneurs HTML existants.
+    for (const field of fields) {
+      fieldset.appendChild(field);
+    }
+
+    container.appendChild(fieldset);
+  }
+
+  // Aucune section créée : on supprime le conteneur.
+  if (container.children.length === 0) {
+    container.remove();
+  }
+})();
+</script>
