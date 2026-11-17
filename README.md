@@ -1,96 +1,175 @@
 # Redmine Form Sections
 
-Redmine Form Sections est un plugin permettant de personnaliser
-la disposition des champs personnalisés (Custom Fields) dans
-les formulaires Redmine.
+[🇫🇷 Documentation en français](README.fr.md)
 
-Il permet de regrouper ces champs dans des sections nommées,
-organisées sur une ou deux colonnes.
+Redmine Form Sections is a plugin that lets you customize the layout of custom fields in Redmine issue forms.
 
-**Le plugin agit exclusivement sur les champs personnalisés.**
-Les champs natifs de Redmine (Sujet, Description, Statut,
-Priorité, Assigné à, etc.) conservent leur disposition habituelle.
+It groups custom fields into named sections, arranged in one or two columns.
 
-## Fonctionnalités
+**The plugin only affects custom fields.** Native Redmine fields (Subject, Description, Status, Priority, Assignee, etc.) retain their usual layout.
 
-- Configuration des sections par tracker.
-- Disposition sur une ou deux colonnes.
-- Activation du plugin individuellement par projet.
-- Configuration centralisée au format YAML.
-- Validation de la configuration avant enregistrement.
-- Détection des identifiants de champs déclarés plusieurs fois.
-- Export de la configuration YAML.
-- Interface disponible en français et en anglais.
+## Features
 
-Le plugin réorganise les champs existants dans le formulaire.
-Il ne modifie ni leur définition ni leurs valeurs.
+- Configure sections for each tracker.
+- Arrange fields in one or two columns.
+- Enable the plugin independently for each project.
+- Manage configuration centrally using YAML.
+- Validate configuration before saving.
+- Detect custom field IDs declared more than once.
+- Export the YAML configuration.
+- Use the interface in French or English.
 
-### Comportement
+The plugin rearranges existing fields in the form. It does not change their definitions or values.
 
-- Un tracker absent de la configuration conserve le formulaire
-  Redmine natif.
-- Un tracker déclaré avec une liste de sections vide (`1: []`)
-  conserve également le formulaire natif.
-- Une section sans champ présent dans le formulaire n'est pas affichée.
-- Les champs non affectés à une section sont regroupés dans
-  une section "Autres champs", lorsqu'ils sont présents.
-- Les champs absents du formulaire ne sont pas ajoutés artificiellement.
+## Screenshots
 
-## Compatibilité
+### Native Redmine form
 
-Version du plugin : 0.1.0
+By default, Redmine arranges custom fields in two columns according to their configured order.
 
-Environnement de développement et de test :
+![Native Redmine form](docs/images/form-native.png)
+
+### Form organized with Redmine Form Sections
+
+The plugin groups custom fields into functional sections, with a one- or two-column layout.
+
+![Form with sections](docs/images/form-sections-default.png)
+
+### Compatibility with Redmine themes
+
+Sections adapt to different Redmine themes, including dark themes.
+
+![Form with a dark theme](docs/images/form-sections-dark.png)
+
+### YAML configuration
+
+Sections can be configured directly from the Redmine administration interface using YAML.
+
+![YAML configuration](docs/images/configuration-yaml.png)
+
+For a graphical drag-and-drop configuration interface, see the companion plugin **Redmine Form Sections PRO**.
+
+## Visual editor — Redmine Form Sections PRO
+
+**Redmine Form Sections PRO** is a companion plugin that makes form administration easier. It provides a graphical interface for configuring sections without editing YAML manually.
+
+### Additional features
+
+- Create, edit, and delete sections.
+- Organize custom fields by dragging and dropping them.
+- Distribute fields across one or two columns.
+- Reorder sections and fields.
+- View unassigned fields.
+- Search dynamically among unassigned fields.
+- Save the configuration.
+
+The PRO plugin relies on Redmine Form Sections FREE.
+
+**The FREE plugin is required:** it applies the configuration to Redmine forms. The PRO plugin adds an administration interface but is not required to use the FREE plugin.
+
+Both plugins can be installed together.
+
+### Behavior
+
+- Trackers without a configuration keep the native Redmine form.
+- A tracker configured with an empty list of sections (`1: []`) also keeps the native form.
+- Sections containing no fields present in the form are not displayed.
+- Fields that have not been assigned to a section are grouped into an "Other fields" section when they are present in the form.
+- Fields missing from the form are not added artificially.
+
+## Compatibility
+
+Plugin version: **0.1.1**
+
+Tested Redmine versions:
+
+- Redmine 4.1.2
+- Redmine 4.2.6
 - Redmine 7.0.3
-- PostgreSQL 17
 
-La compatibilité avec d'autres versions de Redmine
-n'a pas encore été vérifiée.
+The plugin has been tested with different themes, including the default Redmine theme.
+
+Compatibility with other Redmine versions is not guaranteed.
 
 ## Installation
 
-1. Copier le répertoire `redmine_form_sections` dans
-   le répertoire `plugins` de Redmine.
+1. Copy the `redmine_form_sections` directory into Redmine's `plugins` directory.
+2. Restart Redmine.
+3. In **Administration > Plugins**, check that "Redmine Form Sections" appears in the list.
 
-2. Redémarrer Redmine.
+No database migration is required for this plugin version.
 
-3. Dans **Administration > Plugins**, vérifier que
-   "Redmine Form Sections" apparaît dans la liste.
+## Upgrading
 
-Aucune migration de base de données n'est nécessaire
-pour cette version du plugin.
+Before upgrading, we recommend that you:
+
+1. Check that the new plugin version is compatible with your Redmine version.
+2. Export the YAML configuration from **Administration > Plugins > Redmine Form Sections > Configure**.
+3. Back up the currently installed plugin directory and the `config/form_layouts.yml` file if it has been customized.
+4. Plan for a Redmine restart.
+
+### Procedure
+
+1. Stop the affected Redmine instances using your usual operational procedure.
+2. Replace the `plugins/redmine_form_sections` directory with the new version, keeping exactly the same directory name.
+3. Restart Redmine.
+4. In **Administration > Plugins**, verify that the new version is detected.
+5. Confirm that the existing YAML configuration has been preserved and that customized forms work correctly.
+
+### Preserving the configuration
+
+The YAML configuration saved from the administration interface is stored in Redmine's settings in the database.
+
+It is therefore normally preserved when replacing the plugin files.
+
+**Important:** if `config/form_layouts.yml` was edited directly, preserve these changes when upgrading.
+
+Exporting the YAML configuration beforehand provides an additional backup that can be used to restore it easily.
+
+### Environments with multiple application servers
+
+When multiple application servers share the `plugins` directory (for example, over NFS), deploy the plugin files only once to the shared storage.
+
+However, all application instances must be restarted to load the new version.
+
+### Database migration
+
+Upgrading from version 0.1.0 to 0.1.1 does not require a database migration.
+
+### Rollback
+
+If you encounter a problem:
+
+1. Restore the previous plugin version's directory.
+2. Restart the affected Redmine instances.
+3. Verify that the forms work correctly.
+
+The YAML configuration stored in Redmine is preserved.
 
 ## Activation
 
-Le plugin doit être activé sur chaque projet concerné.
+The plugin must be enabled in each project where it should be used.
 
-1. Ouvrir le projet.
-2. Accéder à **Configuration > Modules**.
-3. Activer **Personnalisation des formulaires**.
-4. Enregistrer.
+1. Open the project.
+2. Go to **Settings > Modules**.
+3. Enable **Form customization** (the module label may vary with the interface language).
+4. Save the settings.
 
-Les projets sur lesquels le module est désactivé
-conservent le comportement natif de Redmine.
+Projects where the module is disabled retain Redmine's native behavior.
 
 ## Configuration
 
-Accéder à :
+Go to **Administration > Plugins > Redmine Form Sections > Configure**.
 
-**Administration > Plugins > Redmine Form Sections > Configurer**
+Custom field layout is defined in YAML.
 
-La disposition des champs personnalisés est définie au format YAML.
+Configuration stored in the plugin settings takes precedence.
 
-La configuration enregistrée dans les paramètres du plugin
-est prioritaire.
+The `config/form_layouts.yml` file provides the initial configuration and serves as a fallback when no usable saved configuration is available.
 
-Le fichier `config/form_layouts.yml` fournit la configuration
-initiale et sert de repli lorsqu'aucune configuration enregistrée
-n'est exploitable.
+Configuration is shared by all projects using the same tracker.
 
-La configuration est commune à tous les projets utilisant
-un même tracker.
-
-### Exemple de configuration
+### Configuration example
 
 ```yaml
 trackers:
@@ -104,55 +183,45 @@ trackers:
       right: [6, 7]
 ```
 
-Dans cet exemple :
+In this example:
 
-- `trackers` contient les configurations des différents trackers.
-- `1` est l'identifiant du tracker Redmine.
-- `title` définit le titre de la section.
-- `left` contient les identifiants des champs personnalisés
-  à afficher dans la colonne de gauche.
-- `right` contient les identifiants des champs personnalisés
-  à afficher dans la colonne de droite.
+- `trackers` holds the configuration for each tracker.
+- `1` is the Redmine tracker ID.
+- `title` defines the section title.
+- `left` lists the custom field IDs to display in the left column.
+- `right` lists the custom field IDs to display in the right column.
 
-**Les nombres indiqués dans `left` et `right` correspondent
-aux identifiants des champs personnalisés Redmine (Custom Field IDs),
-et non à leur position dans le formulaire.**
+**The numbers in `left` and `right` are Redmine custom field IDs, not field positions in the form.**
 
-Plusieurs champs peuvent être placés dans une même colonne
-en séparant leurs identifiants par des virgules.
-
-Par exemple :
+Multiple fields can be placed in the same column by separating their IDs with commas. For example:
 
 ```yaml
 left: [12, 15, 23]
 ```
 
-Cette configuration place successivement les champs personnalisés
-12, 15 et 23 dans la colonne de gauche.
+This displays custom fields 12, 15, and 23, in that order, in the left column.
 
-**L'ordre des identifiants détermine l'ordre d'affichage des champs
-dans la colonne.**
+**The order of the IDs determines the display order of fields within the column.**
 
-### Identifier un champ personnalisé
+### Finding a custom field ID
 
-Dans Redmine :
+In Redmine:
 
-1. Accéder à **Administration > Champs personnalisés**.
-2. Sélectionner le champ personnalisé concerné.
-3. Repérer son identifiant dans l'URL.
+1. Go to **Administration > Custom fields**.
+2. Select the relevant custom field.
+3. Find its ID in the URL.
 
-Exemple :
+Example:
 
-`https://redmine.exemple.fr/custom_fields/123/edit`
+`https://redmine.example.com/custom_fields/123/edit`
 
-Dans cet exemple, l'identifiant du champ personnalisé est `123`.
+In this example, the custom field ID is `123`.
 
-### Organisation des colonnes
+### Column layout
 
-Si `right` est déclaré, la section utilise deux colonnes,
-même si l'une des listes est vide.
+If `right` is declared, the section uses two columns, even when one of the lists is empty.
 
-Exemple :
+For example:
 
 ```yaml
 - title: "Application"
@@ -160,96 +229,75 @@ Exemple :
   right: []
 ```
 
-La section utilise deux colonnes, mais seule celle de gauche
-contient des champs.
+The section uses two columns, but only the left column contains fields.
 
-Si seul `left` est déclaré, la section utilise une colonne
-sur toute la largeur disponible.
-
-Exemple :
+When only `left` is declared, the section uses a single column across the available width:
 
 ```yaml
 - title: "Application"
   left: [1, 2]
 ```
 
-La colonne `left` est obligatoire.
+The `left` property is required.
 
-Une section doit déclarer au moins un champ personnalisé.
+A section must declare at least one custom field.
 
-Un même champ personnalisé ne peut pas être déclaré plusieurs
-fois pour un même tracker.
+The same custom field cannot be declared more than once for a tracker.
 
-Chaque section doit posséder un titre (`title`) non vide.
+Every section must have a non-empty `title`.
 
-Seules les propriétés `title`, `left` et `right` sont autorisées
-dans une section. Toute propriété inconnue provoque une erreur
-de validation.
+Only `title`, `left`, and `right` are allowed in a section. Unknown properties cause a validation error.
 
-### Champs personnalisés en pleine largeur
+### Full-width custom fields
 
-Le plugin respecte l'option native de Redmine permettant d'afficher
-un champ personnalisé sur toute la largeur du formulaire.
+The plugin respects Redmine's native option for displaying a custom field across the full width of the form.
 
-Lorsqu'un champ est configuré en pleine largeur dans Redmine :
+When a custom field is configured as full-width in Redmine:
 
-- Il peut être déclaré indifféremment dans `left` ou `right` dans le YAML.
-- Il est affiché sous les colonnes de la section correspondante,
-  sur toute la largeur disponible.
-- S'il n'est déclaré dans aucune section, il est placé à la fin
-  de la section automatique « Autres champs ».
-- Si une section contient uniquement des champs en pleine largeur,
-  aucune structure de colonnes inutile n'est créée.
+- It can be declared in either `left` or `right` in the YAML configuration.
+- It is displayed below the section's columns, across the available width.
+- If it is not declared in any section, it appears at the end of the automatic "Other fields" section.
+- If a section contains only full-width fields, no unnecessary column structure is created.
 
-Le plugin conserve les contrôles HTML générés par Redmine,
-y compris les éditeurs de texte avec formatage.
+The plugin preserves the HTML controls generated by Redmine, including rich-text editors.
 
-Cette personnalisation concerne exclusivement les champs personnalisés.
-Les champs natifs de Redmine ne sont pas réorganisés.
+This customization applies to custom fields only. Native Redmine fields are not rearranged.
 
-## Export de la configuration
+## Exporting the configuration
 
-L'écran d'administration permet de télécharger
-la configuration YAML.
+The administration interface lets you download the YAML configuration.
 
-L'export est réservé aux administrateurs Redmine.
+Only Redmine administrators can export it.
 
 ## Tests
 
-Le code source contient des tests unitaires et
-des tests d'intégration.
+The source code includes unit and integration tests covering, among other things:
 
-Ils permettent notamment de vérifier :
+- YAML configuration validation.
+- Detection of invalid configurations.
+- Administration behavior.
+- Export functionality and access restrictions.
 
-- La validation des configurations YAML.
-- La détection des configurations incorrectes.
-- Le comportement de l'administration.
-- L'export et ses restrictions d'accès.
+These tests are not required for normal plugin operation.
 
-Ces tests ne sont pas nécessaires au fonctionnement
-normal du plugin.
+## Current limitations
 
-## Limitations actuelles
+- Sections are configured per tracker and shared by every project using that tracker.
+- Native Redmine fields (Subject, Description, Status, Priority, etc.) cannot be rearranged.
+- Only custom fields actually present in a form are reorganized.
+- The appearance depends on the Redmine theme; minor visual differences may occur.
+- Compatibility has only been verified with the Redmine versions listed above.
 
-- La configuration est commune à tous les projets
-  utilisant un même tracker.
-- Il n'existe pas encore d'éditeur visuel.
-- La compatibilité avec les anciennes versions
-  de Redmine reste à vérifier.
-- La disposition des champs natifs de Redmine n'est 
-  pas personnalisable.
+A graphical section editor is available through the companion plugin **Redmine Form Sections PRO**.
 
-## Auteur
+## Author
 
 Julien Maisonnas
 
-## Licence
+## License
 
 Copyright (C) 2026 Julien Maisonnas
 
-Redmine Form Sections est distribué sous les termes de la
-GNU General Public License, version 2 ou ultérieure
-(GPL-2.0-or-later).
+Redmine Form Sections is distributed under the terms of the GNU General Public License, version 2 or later (GPL-2.0-or-later).
 
-Voir le fichier [LICENSE](LICENSE) pour le texte intégral
-de la licence.
+See [LICENSE](LICENSE) for the full license text.
