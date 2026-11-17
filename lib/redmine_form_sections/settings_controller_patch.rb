@@ -1,9 +1,8 @@
 module RedmineFormSections
   module SettingsControllerPatch
-    extend ActiveSupport::Concern
 
-    included do
-      before_action :rfs_validate_plugin_settings, only: :plugin
+    def self.included(base)
+      base.before_action :rfs_validate_plugin_settings, only: :plugin
     end
 
     private
