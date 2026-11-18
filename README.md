@@ -10,14 +10,14 @@ It groups custom fields into named sections, arranged in one or two columns.
 
 ## Features
 
-- Configure sections for each tracker.
-- Arrange fields in one or two columns.
+- Configure sections for each tracker using a built-in visual editor.
+- Create, rename, and delete sections; reorder sections with drag and drop.
+- Arrange custom fields in one or two columns, and reorder them visually.
+- Find unclassified fields using a search box.
 - Enable the plugin independently for each project.
-- Manage configuration centrally using YAML.
-- Validate configuration before saving.
-- Detect custom field IDs declared more than once.
-- Export the YAML configuration.
-- Use the interface in French or English.
+- Validate configuration before saving and detect concurrent edits.
+- View, edit, and export the YAML configuration when advanced access is needed.
+- Use the administration interface in French or English.
 
 The plugin rearranges existing fields in the form. It does not change their definitions or values.
 
@@ -41,35 +41,37 @@ Sections adapt to different Redmine themes, including dark themes.
 
 ![Form with a dark theme](docs/images/form-sections-dark.png)
 
-### YAML configuration
+## Visual editor
 
-Sections can be configured directly from the Redmine administration interface using YAML.
+The **visual editor is included in Redmine Form Sections 1.0.0**. No additional plugin is needed.
 
-![YAML configuration](docs/images/configuration-yaml.png)
+Open **Administration > Form Sections** to configure the sections for a tracker without editing YAML manually.
 
-For a graphical drag-and-drop configuration interface, see the companion plugin **Redmine Form Sections PRO**.
+![Visual layout editor](docs/images/visual-editor-en.png)
 
-## Visual editor — Redmine Form Sections PRO
+The editor lets you:
 
-**Redmine Form Sections PRO** is a companion plugin that makes form administration easier. It provides a graphical interface for configuring sections without editing YAML manually.
+- Select a tracker and manage its sections.
+- Create, rename, remove, and reorder sections.
+- Drag custom fields between sections and columns, or reorder them within a column.
+- Create sections with a one- or two-column layout.
+- Identify full-width fields and view or search unclassified fields.
+- Save the configuration with validation, including checks for empty sections and titles.
+- Detect when the saved configuration has changed since the editor was opened, to avoid accidentally overwriting someone else's edits.
 
-### Additional features
+The section and field names shown in the screenshot come from the Redmine instance and may differ from the interface language.
 
-- Create, edit, and delete sections.
-- Organize custom fields by dragging and dropping them.
-- Distribute fields across one or two columns.
-- Reorder sections and fields.
-- View unassigned fields.
-- Search dynamically among unassigned fields.
-- Save the configuration.
+## Advanced YAML configuration
 
-The PRO plugin relies on Redmine Form Sections FREE.
+The same configuration is available in YAML through **Administration > Plugins > Redmine Form Sections > Configure**. This is mainly useful for inspection, backup, export, or advanced troubleshooting.
 
-**The FREE plugin is required:** it applies the configuration to Redmine forms. The PRO plugin adds an administration interface but is not required to use the FREE plugin.
+The visual editor also provides a secondary link to **YAML configuration (advanced)**.
 
-Both plugins can be installed together.
+![Advanced YAML configuration](docs/images/configuration-yaml-en.png)
 
-### Behavior
+Both interfaces use the same saved configuration; no separate synchronization is needed.
+
+## Form behavior
 
 - Trackers without a configuration keep the native Redmine form.
 - A tracker configured with an empty list of sections (`1: []`) also keeps the native form.
@@ -79,25 +81,20 @@ Both plugins can be installed together.
 
 ## Compatibility
 
-Plugin version: **0.1.1**
+Plugin version: **1.0.0**
 
-Tested Redmine versions:
+Tested with Redmine **4.1.2**, **4.2.6**, and **7.0.3**.
 
-- Redmine 4.1.2
-- Redmine 4.2.6
-- Redmine 7.0.3
-
-The plugin has been tested with different themes, including the default Redmine theme.
-
-Compatibility with other Redmine versions is not guaranteed.
+The plugin has also been tested with different themes, including the default Redmine theme. Compatibility with other Redmine versions is not guaranteed.
 
 ## Installation
 
 1. Copy the `redmine_form_sections` directory into Redmine's `plugins` directory.
 2. Restart Redmine.
 3. In **Administration > Plugins**, check that "Redmine Form Sections" appears in the list.
+4. Open **Administration > Form Sections** to access the visual editor.
 
-No database migration is required for this plugin version.
+Only the `redmine_form_sections` plugin directory is needed. No separate visual-editor plugin or database migration is required.
 
 ## Upgrading
 
@@ -108,13 +105,13 @@ Before upgrading, we recommend that you:
 3. Back up the currently installed plugin directory and the `config/form_layouts.yml` file if it has been customized.
 4. Plan for a Redmine restart.
 
-### Procedure
+### Procedure (including upgrades from 0.1.1)
 
 1. Stop the affected Redmine instances using your usual operational procedure.
 2. Replace the `plugins/redmine_form_sections` directory with the new version, keeping exactly the same directory name.
 3. Restart Redmine.
-4. In **Administration > Plugins**, verify that the new version is detected.
-5. Confirm that the existing YAML configuration has been preserved and that customized forms work correctly.
+4. In **Administration > Plugins**, verify that version 1.0.0 is detected and that only one Redmine Form Sections plugin is installed.
+5. Confirm that the existing YAML configuration is preserved, the visual editor opens, and customized forms work correctly.
 
 ### Preserving the configuration
 
@@ -134,7 +131,7 @@ However, all application instances must be restarted to load the new version.
 
 ### Database migration
 
-Upgrading from version 0.1.0 to 0.1.1 does not require a database migration.
+Upgrading from version 0.1.1 to 1.0.0 does not require a database migration. The existing YAML configuration format is retained.
 
 ### Rollback
 
@@ -148,20 +145,132 @@ The YAML configuration stored in Redmine is preserved.
 
 ## Activation
 
-The plugin must be enabled in each project where it should be used.
+Section layouts are configured centrally by tracker, but the plugin module must be enabled for each project where they should apply. Projects with the module disabled keep the native Redmine form.
+
+### Enable for an individual project
 
 1. Open the project.
 2. Go to **Settings > Modules**.
-3. Enable **Form customization** (the module label may vary with the interface language).
+3. Enable **Form Sections** (the name depends on the interface language).
 4. Save the settings.
 
-Projects where the module is disabled retain Redmine's native behavior.
+### Enable by default for new projects
 
-## Configuration
+Go to **Administration > Settings > Projects** and select **Form Sections** under **Default enabled modules for new projects**. Save the settings.
 
-Go to **Administration > Plugins > Redmine Form Sections > Configure**.
+**This only applies to newly created projects.** Existing projects are not changed.
 
-Custom field layout is defined in YAML.
+### Enable for all existing projects
+
+An administrator can enable the module on every existing project using the Redmine Rails runner. This is preferable to directly inserting records into the database: it uses Redmine's built-in `Project#enable_module!` method, keeps other modules enabled, and skips projects where the module is already active.
+
+**1. Preview how many projects would be affected (read-only):**
+
+```bash
+RAILS_ENV=production bundle exec rails runner '
+  name = "redmine_form_sections"
+  total = Project.count
+  missing = 0
+  Project.find_each { |project| missing += 1 unless project.module_enabled?(name) }
+  puts "#{missing} of #{total} projects require activation"
+'
+```
+
+**2. After reviewing the result and backing up the database, activate the module:**
+
+```bash
+RAILS_ENV=production bundle exec rails runner '
+  name = "redmine_form_sections"
+  updated = 0
+  Project.find_each do |project|
+    next if project.module_enabled?(name)
+    project.enable_module!(name)
+    updated += 1
+  end
+  puts "Module enabled for #{updated} projects"
+'
+```
+
+Run these commands from the Redmine application directory, with the same Ruby environment used by Redmine. For Docker installations, run the Rails runner inside the Redmine application container instead. Test the operation on a non-production environment first.
+
+The command includes all existing projects, including archived or closed ones. It does **not** configure the default for future projects; use the previous setting for that.
+
+## Disabling the plugin
+
+Redmine Form Sections can be disabled without uninstalling it or losing the saved form configuration.
+
+### Disable the module for an individual project
+
+1. Open the project.
+2. Go to **Settings > Modules**.
+3. Uncheck **Form Sections**.
+4. Save the settings.
+
+The project immediately returns to Redmine's native form layout.
+
+### Disable the module for all existing projects
+
+An administrator can disable the module for all existing projects using the Redmine Rails runner.
+
+**1. Check how many projects are affected (read-only):**
+
+```bash
+RAILS_ENV=production bundle exec rails runner '
+  name = "redmine_form_sections"
+  count = EnabledModule.where(name: name).count
+  puts "Module enabled for #{count} projects"
+'
+```
+
+**2. After reviewing the result and backing up the database, disable the module:**
+
+```bash
+RAILS_ENV=production bundle exec rails runner '
+  name = "redmine_form_sections"
+  updated = 0
+
+  Project.find_each do |project|
+    next unless project.module_enabled?(name)
+
+    project.disable_module!(name)
+    updated += 1
+  end
+
+  puts "Module disabled for #{updated} projects"
+'
+```
+
+Run these commands from the Redmine application directory, using the appropriate Ruby environment. For Docker installations, run the Rails runner inside the Redmine application container.
+
+To prevent automatic activation in newly created projects, also go to **Administration > Settings > Projects** and uncheck **Form Sections** from the default enabled modules.
+
+Disabling the module preserves the YAML configuration and does not delete any custom fields. The module can be re-enabled later without recreating the sections.
+
+**Important:** simply clearing the YAML configuration is not a recommended way to disable the plugin. When no usable saved configuration is available, the plugin may fall back to `config/form_layouts.yml`.
+
+## Uninstalling
+
+To completely uninstall Redmine Form Sections:
+
+1. Export the YAML configuration from **Administration > Plugins > Redmine Form Sections > Configure**.
+2. Back up the database.
+3. Disable the module for existing projects, as described above.
+4. Remove **Form Sections** from the default enabled modules for new projects.
+5. Stop Redmine.
+6. Remove the `plugins/redmine_form_sections` directory.
+7. Restart Redmine.
+
+For Docker installations, also remove the plugin volume mapping from the Docker Compose configuration before recreating the container.
+
+The plugin does not use database migrations, so no migration rollback is required.
+
+Uninstalling the plugin does not delete Redmine projects, issues, or custom fields.
+
+Previously saved plugin settings may remain in the database. This procedure intentionally preserves them to facilitate a future reinstallation.
+
+## Configuration reference (YAML)
+
+For everyday administration, use **Administration > Form Sections** and its visual editor. The following reference describes the YAML format used by the plugin, which is also available through **Administration > Plugins > Redmine Form Sections > Configure**.
 
 Configuration stored in the plugin settings takes precedence.
 
@@ -275,7 +384,8 @@ The source code includes unit and integration tests covering, among other things
 
 - YAML configuration validation.
 - Detection of invalid configurations.
-- Administration behavior.
+- Administration behavior and visual-editor validation.
+- Detection of changes made by another administrator before saving.
 - Export functionality and access restrictions.
 
 These tests are not required for normal plugin operation.
@@ -286,9 +396,9 @@ These tests are not required for normal plugin operation.
 - Native Redmine fields (Subject, Description, Status, Priority, etc.) cannot be rearranged.
 - Only custom fields actually present in a form are reorganized.
 - The appearance depends on the Redmine theme; minor visual differences may occur.
-- Compatibility has only been verified with the Redmine versions listed above.
+- Compatibility has been tested with the Redmine versions listed above; other versions may behave differently.
 
-A graphical section editor is available through the companion plugin **Redmine Form Sections PRO**.
+The visual editor is included in this plugin; it does not change the limits described above.
 
 ## Author
 

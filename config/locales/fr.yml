@@ -1,5 +1,5 @@
 fr:
-  project_module_redmine_form_sections: "Personnalisation des formulaires"
+  project_module_redmine_form_sections: "Form Sections"
   label_rfs_other_fields: "Autres champs"
   label_rfs_layouts_yaml: "Configuration des formulaires"
   label_rfs_export_yaml: "Exporter la configuration YAML"
@@ -18,7 +18,7 @@ fr:
   error_rfs_yaml_duplicate_field: "Tracker %{tracker_id} : le champ %{field_id} est déclaré plusieurs fois."
   error_rfs_yaml_unknown_section_key: "Tracker %{tracker_id}, section « %{title} » : propriété inconnue « %{key} »."
 
-  label_rfs_pro_admin: "Redmine Form Sections"
+  label_rfs_pro_admin: "Form Sections"
 
   label_rfs_pro_field_missing: "Champ introuvable"
   label_rfs_pro_full_width: "Pleine largeur"

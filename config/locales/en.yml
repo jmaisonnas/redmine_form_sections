@@ -1,5 +1,5 @@
 en:
-  project_module_redmine_form_sections: "Form customization"
+  project_module_redmine_form_sections: "Form Sections"
   label_rfs_other_fields: "Other fields"
   label_rfs_layouts_yaml: "Form configuration"
   label_rfs_export_yaml: "Export YAML configuration"
@@ -18,7 +18,7 @@ en:
   error_rfs_yaml_duplicate_field: "Tracker %{tracker_id}: field %{field_id} is declared more than once."
   error_rfs_yaml_unknown_section_key: 'Tracker %{tracker_id}, section "%{title}": unknown property "%{key}".'
 
-  label_rfs_pro_admin: "Redmine Form Sections"
+  label_rfs_pro_admin: "Form Sections"
 
   label_rfs_pro_field_missing: "Custom field not found"
   label_rfs_pro_full_width: "Full width"
