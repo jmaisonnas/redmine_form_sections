@@ -5,7 +5,7 @@ Redmine::Plugin.register :redmine_form_sections do
   name 'Redmine Form Sections'
   author 'Julien Maisonnas'
   description 'Organize Redmine custom fields into configurable form sections'
-  version '0.1.1'
+  version '1.0.0'
   url 'https://github.com/jmaisonnas/redmine_form_sections'
   author_url 'https://github.com/jmaisonnas'
 
