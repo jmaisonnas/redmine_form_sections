@@ -1,0 +1,1945 @@
+<% html_title l(:label_rfs_pro_admin) %>
+
+<h2>Redmine Form Sections</h2>
+
+<template id="rfs-pro-delete-icon-template">
+  <% if respond_to?(:sprite_icon) %>
+    <%= sprite_icon('del') %>
+  <% else %>
+    <span class="icon icon-del rfs-pro-legacy-icon"
+          aria-hidden="true"></span>
+  <% end %>
+</template>
+
+<template id="rfs-pro-reorder-icon-template">
+  <% if respond_to?(:sprite_icon) %>
+    <%= sprite_icon('reorder', '') %>
+  <% else %>
+    <span class="icon-only icon-sort-handle rfs-pro-legacy-icon"
+          aria-hidden="true"></span>
+  <% end %>
+</template>
+
+<style>
+  /* Carte représentant un champ personnalisé */
+  .rfs-pro-preview p.rfs-pro-field {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 42px;
+
+    margin: 6px 0;
+    padding: 8px 10px;
+
+    border: 1px solid var(--rfs-pro-border);
+    border-radius: 5px;
+
+    background: var(--rfs-pro-card-bg);
+  }
+
+  /* Badge indiquant le type du champ */
+  .rfs-pro-field-type {
+    flex-shrink: 0;
+
+    min-width: 42px;
+    padding: 4px 6px;
+
+    background: var(--rm-accent-soft, #dcebf5);
+    color: var(--rm-accent, #24577a);
+
+    border-radius: 4px;
+
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  /* Nom et identifiant du champ */
+  .rfs-pro-field-content {
+    flex: 1;
+    min-width: 0;
+
+    overflow-wrap: anywhere;
+  }
+
+  .rfs-pro-field-name {
+    font-weight: 600;
+  }
+
+  .rfs-pro-field-id {
+    margin-left: 6px;
+    font-size: 11px;
+    color: var(--rm-muted, #777777);
+    white-space: nowrap;
+  }
+
+  /* Indicateur de pleine largeur */
+  .rfs-pro-field-width {
+    padding: 3px 7px;
+
+    border: 1px solid var(--rm-border-2, #a4bacb);
+    border-radius: 4px;
+
+    ccolor: var(--rm-accent, #42627b);
+    background: var(--rm-accent-soft, #eef4f8);
+
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  /* Champs problématiques */
+  .rfs-pro-preview p.rfs-pro-field-warning {
+    border-color: color-mix(
+      in srgb,
+      var(--rfs-pro-warning) 55%,
+      var(--rfs-pro-border)
+    );
+
+    background: color-mix(
+      in srgb,
+      var(--rfs-pro-warning) 10%,
+      var(--rfs-pro-card-bg)
+    );
+  }
+
+  .rfs-pro-field-error {
+    padding: 3px 7px;
+
+    border-radius: 4px;
+
+    background: color-mix(
+      in srgb,
+      var(--rfs-pro-warning) 23%,
+      var(--rfs-pro-card-bg)
+    );
+
+    color: inherit;
+
+    font-size: 11px;
+  }
+
+  /* Retrait d un champ invalide de la configuration */
+  .rfs-pro-remove-invalid-field {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 2px 7px;
+    font-size: 14px;
+    line-height: 1.2;
+    cursor: pointer;
+  }
+
+  /* Disposition des panneaux */
+  .rfs-pro-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* Palette de l'éditeur PRO.
+    Utiliser les couleurs du thème lorsqu'elles sont disponibles. */
+  .rfs-pro-editor {
+    --rfs-pro-panel-bg: var(--rm-surface, #f5f7f9);
+    --rfs-pro-card-bg: var(--rm-surface-2, #ffffff);
+    --rfs-pro-border: var(--rm-border, #c5d0d8);
+
+    --rfs-pro-warning: #d97706;
+  }
+
+  /* Zone des sections configurées */
+  .rfs-pro-editor-main {
+    min-width: 0;
+  }
+
+  /* Panneau des champs non classés */
+  .rfs-pro-unclassified {
+    align-self: stretch;
+
+    min-width: 0;
+    padding: 12px;
+
+    border: 1px solid var(--rfs-pro-border);
+    border-radius: 6px;
+
+    background: var(--rfs-pro-panel-bg);
+  }
+
+  /* Titre du panneau */
+  .rfs-pro-unclassified h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+
+  /* Recherche parmi les champs non classés */
+  .rfs-pro-pool-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .rfs-pro-pool-search input {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 6px 8px;
+  }
+
+  .rfs-pro-pool-search button {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+
+  .rfs-pro-pool-search button[hidden] {
+    display: none;
+  }
+
+  .rfs-pro-search-feedback {
+    margin: 6px 0 10px;
+    font-size: 12px;
+    color: var(--rm-muted, #777777);
+  }
+
+  .rfs-pro-search-feedback[hidden] {
+    display: none;
+  }
+
+  /* Masquer les cartes exclues par le filtre */
+  .rfs-pro-unclassified > .rfs-pro-field.rfs-pro-filtered {
+    display: none;
+  }
+
+  /* Adaptation aux écrans plus étroits */
+  @media (max-width: 900px) {
+    .rfs-pro-editor {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Donner une surface minimale aux colonnes vides */
+  .rfs-pro-editor-main [data-rfs-column] {
+    min-height: 45px;
+  }
+
+  /* Champs pouvant être déplacés */
+  .rfs-pro-field[draggable="true"] {
+    cursor: grab;
+  }
+
+  .rfs-pro-field[draggable="true"]:active {
+    cursor: grabbing;
+  }
+
+  /* Mettre en évidence la zone de destination */
+  .rfs-pro-drop-hover {
+    background: var(--rm-accent-soft, #e5f2fc) !important;
+    outline: none;
+    box-shadow: inset 0 -3px 0 var(--rm-accent, #4b91c2);
+    border-radius: 4px;
+  }
+
+  /* Repère d insertion entre deux champs */
+  .rfs-pro-editor-main .rfs-pro-field.rfs-pro-insert-before {
+    position: relative;
+  }
+
+  .rfs-pro-editor-main .rfs-pro-field.rfs-pro-insert-before::before {
+    content: "";
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    top: -7px;
+
+    border-top: 3px solid var(--rm-accent, #4b91c2);
+    pointer-events: none;
+  }
+
+  /* Ne pas afficher deux repères simultanément */
+  .rfs-pro-drop-hover.rfs-pro-drop-before {
+    box-shadow: none;
+  }
+
+  /* Suppression d une section */
+  .rfs-pro-delete-section {
+    margin-left: 12px;
+    padding: 3px 7px;
+
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .rfs-pro-delete-section .icon-svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+  }
+
+  /* Poignée de déplacement des sections */
+  .rfs-pro-section-handle {
+    margin-right: 8px;
+    padding: 2px 5px;
+
+    border: none;
+    background: transparent;
+
+    color: var(--rm-muted, #667b8b);
+    line-height: 1;
+
+    cursor: grab;
+    user-select: none;
+  }
+
+  .rfs-pro-section-handle:active {
+    cursor: grabbing;
+  }
+
+  .rfs-pro-section-handle .icon-svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Indicateur de position d insertion d une section */
+  .rfs-pro-section-insertion-line {
+    position: fixed;
+    display: none;
+
+    height: 3px;
+    border-radius: 3px;
+
+    background: var(--rm-accent, #4b91c2);
+
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Titre de section directement modifiable */
+  .rfs-pro-editor-main .rfs-pro-title-input {
+    box-sizing: border-box;
+    max-width: 100%;
+
+    padding: 3px 6px;
+
+    border: 1px solid transparent;
+    border-radius: 4px;
+
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    vertical-align: middle;
+  }
+
+  /* Montrer discrètement que le titre est modifiable */
+  .rfs-pro-editor-main .rfs-pro-title-input:hover {
+    border-color: var(--rm-border-2, #c5d0d8);
+    background: var(--rm-surface-2, #ffffff);
+  }
+
+  /* Mettre en évidence le champ pendant la saisie */
+  .rfs-pro-editor-main .rfs-pro-title-input:focus {
+    border-color: var(--rm-accent, #5289b5);
+    background: var(--rm-surface-2, #ffffff);
+    outline: 2px solid var(--rm-accent-soft, #dcebf5);
+  }
+
+  /* Alignement des commandes et du titre de section */
+  .rfs-pro-editor-main fieldset[data-section-index] > legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    max-width: 100%;
+
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  /* Centrage des icônes dans leurs boutons */
+  .rfs-pro-editor-main .rfs-pro-section-handle,
+  .rfs-pro-editor-main .rfs-pro-delete-section {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+    margin: 0;
+  }
+
+  /* Compatibilité avec les icônes des anciennes versions de Redmine */
+  .rfs-pro-editor-main .rfs-pro-legacy-icon {
+    display: inline-block;
+
+    box-sizing: border-box;
+    flex: 0 0 16px;
+
+    width: 16px;
+    height: 16px;
+    padding: 0;
+
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .rfs-pro-editor-main .rfs-pro-title-input {
+    min-width: 0;
+  }
+
+  /* Barre d actions de l éditeur */
+  .rfs-pro-edit-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+
+    gap: 12px 16px;
+
+    padding: 12px;
+    margin-bottom: 24px;
+
+    border: 1px solid var(--rfs-pro-border);
+    border-radius: 6px;
+
+    background: var(--rfs-pro-panel-bg);
+  }
+
+  /* Commandes de création d une section */
+  .rfs-pro-new-section-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 8px;
+  }
+
+  /* Indication de modifications non enregistrées */
+  .rfs-pro-unsaved {
+    display: inline-block;
+
+    margin-right: 10px;
+
+    color: color-mix(
+      in srgb,
+      var(--rfs-pro-warning) 55%,
+      currentColor
+    );
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Présentation commune des boutons de validation */
+  .rfs-pro-edit-controls .rfs-pro-cancel-button,
+  .rfs-pro-edit-controls .rfs-pro-save-button {
+    box-sizing: border-box;
+
+    padding: 6px 12px;
+
+    border-radius: 4px;
+
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+
+    cursor: pointer;
+  }
+
+  /* Bouton secondaire : Annuler */
+  .rfs-pro-edit-controls .rfs-pro-cancel-button {
+    margin-right: 6px;
+
+    border: 1px solid var(--rm-border-2, #a5b0b8);
+
+    background: var(--rm-surface-2, #ffffff);
+    color: inherit;
+  }
+
+  .rfs-pro-edit-controls .rfs-pro-cancel-button:hover {
+    background: var(--rm-accent-soft, #e9eef2);
+  }
+
+  /* Bouton principal : Enregistrer */
+  .rfs-pro-edit-controls .rfs-pro-save-button {
+    border: 1px solid var(--rm-accent-hover, #376f9d);
+
+    background: var(--rm-accent, #3c7baa);
+    color: var(--rm-on-accent, #ffffff);
+  }
+
+  .rfs-pro-edit-controls .rfs-pro-save-button:hover {
+    background: var(--rm-accent-hover, #31668f);
+  }
+
+  /* Le fieldset sert de référence au positionnement de la corbeille */
+  .rfs-pro-editor-main fieldset[data-section-index] {
+    position: relative;
+  }
+
+  /* Positionner la suppression à droite de la section */
+  .rfs-pro-editor-main fieldset[data-section-index] > legend .rfs-pro-delete-section {
+    position: absolute;
+
+    top: 0;
+    right: 12px;
+
+    margin: 0;
+    z-index: 1;
+  }
+
+  /* Avertissement lorsque le YAML enregistré est invalide */
+  .rfs-pro-fallback-warning {
+    margin: 8px 0 18px;
+    padding: 12px 14px;
+
+    border: 1px solid #d97706;
+    border-radius: 6px;
+
+    background: color-mix(
+      in srgb,
+      #d97706 10%,
+      var(--rm-surface, #ffffff)
+    );
+
+    color: inherit;
+  }
+
+</style>
+
+<%= form_tag(rfs_pro_path, method: :get) do %>
+
+  <p>
+    <%= label_tag :tracker_id, l(:label_rfs_pro_tracker_configuration) %>
+
+    <%= select_tag :tracker_id,
+          options_for_select(
+            @trackers.map do |tracker|
+              ["#{tracker.name} (ID #{tracker.id})", tracker.id]
+            end,
+            @tracker&.id
+          ),
+          include_blank: l(:label_rfs_pro_select_tracker),
+          style: 'min-width: 300px; max-width: 100%;'
+    %>
+
+    <noscript>
+      <%= submit_tag l(:label_rfs_pro_show) %>
+    </noscript>
+  </p>
+
+<% end %>
+
+<% if @tracker %>
+
+  <% if @invalid_saved_yaml %>
+    <div class="rfs-pro-fallback-warning" role="alert">
+      <%= l(:warning_rfs_pro_invalid_yaml_fallback) %>
+    </div>
+  <% end %>
+
+  <div class="rfs-pro-editor">
+
+    <div class="rfs-pro-editor-main">
+
+    <%= form_tag(
+          rfs_pro_save_path(tracker_id: @tracker.id),
+          method: :patch,
+          id: 'rfs-pro-titles-form',
+          class: 'multiple-submit'
+        ) do %>
+
+      <%= hidden_field_tag :sections_json,
+                          @sections.to_json,
+                          id: 'rfs-pro-sections-json' %>
+
+      <%= hidden_field_tag :yaml_fingerprint,
+                          @yaml_fingerprint %>
+
+      <div class="rfs-pro-edit-controls">
+
+        <div class="rfs-pro-new-section-controls">
+
+          <label for="rfs-pro-new-section-columns">
+            <%= l(:label_rfs_pro_new_section) %>
+          </label>
+
+          <select id="rfs-pro-new-section-columns">
+            <option value="2"><%= l(:label_rfs_pro_two_columns) %></option>
+            <option value="1"><%= l(:label_rfs_pro_one_column) %></option>
+          </select>
+
+          <button type="button" id="rfs-pro-add-section">
+            + <%= l(:button_add) %>
+          </button>
+
+        </div>
+
+        <span id="rfs-pro-save-controls" style="display: none;">
+
+          <span class="rfs-pro-unsaved">
+            ● <%= l(:label_rfs_pro_unsaved) %>
+          </span>
+
+          <%= button_tag l(:button_cancel),
+                        type: 'button',
+                        id: 'rfs-pro-cancel',
+                        class: 'rfs-pro-cancel-button',
+                        data: {
+                          cancel_url: rfs_pro_path(tracker_id: @tracker.id)
+                        } %>
+
+          <%= submit_tag l(:button_rfs_pro_save),
+                        name: nil,
+                        class: 'rfs-pro-save-button',
+                        data: { disable_with: false } %>
+
+        </span>
+
+      </div>
+
+      <% if @sections.empty? %>
+        <p id="rfs-pro-no-layout">
+          <%= l(:label_rfs_pro_empty_layout) %>
+        </p>
+      <% end %>
+
+      <div id="rfs-pro-section-list">
+
+      <% @sections.each_with_index do |section, index| %>
+
+        <% two_columns = section.key?('right') %>
+
+        <% configured_ids = section['left'] + (section['right'] || []) %>
+
+        <% full_width_ids = configured_ids.select do |id|
+            @full_width_field_ids.include?(id)
+          end %>
+
+        <% left_ids = section['left'] - full_width_ids %>
+        <% right_ids = (section['right'] || []) - full_width_ids %>
+
+        <fieldset class="box rfs-pro-preview"
+                  data-section-index="<%= index %>">
+
+          <legend>
+            <%= text_field_tag 'titles[]',
+                              section['title'],
+                              id: "rfs-pro-title-#{index}",
+                              class: 'rfs-pro-title-input',
+                              size: 30,
+                              required: true,
+                              aria: { label: l(:label_rfs_pro_section_title) } %>
+          </legend>
+
+          <% if left_ids.any? || right_ids.any? %>
+
+            <% if two_columns %>
+
+              <div class="splitcontent">
+
+                <div class="splitcontentleft" data-rfs-column="left">
+                  <% left_ids.each do |id| %>
+                    <%= render partial: 'field',
+                              locals: { id: id, full_width: false } %>
+                  <% end %>
+                </div>
+
+                <div class="splitcontentright" data-rfs-column="right">
+                  <% right_ids.each do |id| %>
+                    <%= render partial: 'field',
+                              locals: { id: id, full_width: false } %>
+                  <% end %>
+                </div>
+
+              </div>
+
+            <% else %>
+
+              <div data-rfs-column="left">
+
+                <% left_ids.each do |id| %>
+                  <%= render partial: 'field',
+                            locals: { id: id, full_width: false } %>
+                <% end %>
+
+              </div>
+
+            <% end %>
+
+          <% end %>
+
+          <% full_width_ids.each do |id| %>
+            <%= render partial: 'field',
+                      locals: { id: id, full_width: true } %>
+          <% end %>
+
+        </fieldset>
+
+      <% end %> <%# Fin de la boucle des sections %>
+
+      </div> <%# Fin de rfs-pro-section-list %>
+
+    <% end %> <%# Fin du formulaire %>
+
+  </div>
+
+  <aside class="rfs-pro-unclassified rfs-pro-preview"
+        data-rfs-pool="true"
+        data-field-order="<%= @available_field_ids.to_json %>">
+
+    <h3>
+      <%= l(:label_rfs_pro_unclassified_fields) %>
+      (<span id="rfs-pro-unclassified-count"><%= @unclassified_fields.size %></span>)
+    </h3>
+
+    <div class="rfs-pro-pool-search">
+      <input
+        type="text"
+        id="rfs-pro-field-search"
+        placeholder="<%= l(:label_rfs_pro_search_fields) %>"
+        aria-label="<%= l(:label_rfs_pro_search_fields) %>"
+        autocomplete="off">
+
+      <button
+        type="button"
+        id="rfs-pro-clear-search"
+        title="<%= l(:label_rfs_pro_clear_search) %>"
+        aria-label="<%= l(:label_rfs_pro_clear_search) %>"
+        hidden>×</button>
+    </div>
+
+    <p id="rfs-pro-search-results"
+      class="rfs-pro-search-feedback"
+      aria-live="polite"
+      hidden>
+      <%= l(:label_rfs_pro_search_results) %> :
+      <span id="rfs-pro-search-count">0</span>
+    </p>
+
+    <p id="rfs-pro-search-empty"
+      class="rfs-pro-search-feedback"
+      hidden>
+      <%= l(:label_rfs_pro_no_search_results) %>
+    </p>
+
+    <% if @unclassified_fields.empty? %>
+
+      <p class="rfs-pro-pool-empty">
+        Tous les champs associés à ce tracker
+        sont affectés à une section.
+      </p>
+
+    <% else %>
+
+      <% @unclassified_fields.each do |field| %>
+
+        <%= render partial: 'field',
+                   locals: {
+                     id: field.id,
+                     full_width: field.full_width_layout?
+                   } %>
+
+      <% end %>
+
+    <% end %>
+
+  </aside>
+
+  </div>
+<% end %>
+
+<script>
+(() => {
+  const saveControls = document.getElementById('rfs-pro-save-controls');
+  const form = document.getElementById('rfs-pro-titles-form');
+  const sectionsInput = document.getElementById('rfs-pro-sections-json');
+  const sectionList = document.getElementById('rfs-pro-section-list');
+
+  const trackerSelect = document.getElementById('tracker_id');
+
+  // Mémoriser le tracker réellement affiché.
+  const initialTrackerId = trackerSelect?.value ?? '';
+
+  // Cette variable est également utilisée par beforeunload.
+  let allowNavigation = false;
+
+  // Gérer le changement de tracker.
+  trackerSelect?.addEventListener('change', () => {
+
+    const hasUnsavedChanges =
+      saveControls && saveControls.style.display !== 'none';
+
+    if (hasUnsavedChanges) {
+
+      const confirmed = window.confirm(
+        <%= raw l(:text_rfs_pro_confirm_tracker_change).to_json %>
+      );
+
+      if (!confirmed) {
+
+        // Restaurer le tracker réellement affiché.
+        trackerSelect.value = initialTrackerId;
+
+        return;
+      }
+    }
+
+    // Le changement est accepté : éviter une seconde alerte.
+    allowNavigation = true;
+
+    trackerSelect.form.submit();
+
+  });
+
+  if (!saveControls || !form || !sectionsInput || !sectionList) {
+    return;
+  }
+
+  // Prévenir avant de quitter une configuration modifiée.
+  window.addEventListener('beforeunload', event => {
+
+    const hasUnsavedChanges =
+      saveControls.style.display !== 'none';
+
+    if (!hasUnsavedChanges || allowNavigation) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
+
+  });
+
+  // Annuler les modifications en rechargeant la configuration.
+  const cancelButton = document.getElementById('rfs-pro-cancel');
+
+  cancelButton?.addEventListener('click', () => {
+
+    // L utilisateur abandonne volontairement ses modifications.
+    allowNavigation = true;
+
+    window.location.assign(cancelButton.dataset.cancelUrl);
+
+  });
+
+  // Ne pas laisser le focus sur un titre au chargement de l éditeur.
+  window.addEventListener('load', () => {
+
+    const activeElement = document.activeElement;
+
+    if (activeElement?.matches('.rfs-pro-title-input')) {
+      activeElement.blur();
+    }
+
+  });
+
+  // Une modification de titre rend la configuration modifiée.
+  sectionList.addEventListener('input', event => {
+
+    if (!event.target.matches('.rfs-pro-title-input')) {
+      return;
+    }
+
+    saveControls.style.display = 'inline';
+  });
+
+  const validationMessages = {
+    sectionsCount: <%= raw l(:error_rfs_pro_sections_count).to_json %>,
+
+    sectionTitleRequired: <%= raw l(
+      :error_rfs_pro_section_title_required,
+      number: '__RFS_SECTION_NUMBER__'
+    ).to_json %>,
+
+    sectionFieldRequired: <%= raw l(
+      :error_rfs_pro_section_field_required,
+      title: '__RFS_SECTION_TITLE__'
+    ).to_json %>,
+
+    prepareConfiguration: <%= raw l(
+      :error_rfs_pro_prepare_configuration
+    ).to_json %>
+  };
+
+  // Préparer et valider la disposition complète avant enregistrement.
+  form.addEventListener('submit', (event) => {
+
+    try {
+      const sections = JSON.parse(sectionsInput.value);
+
+      const titleInputs = [
+        ...form.querySelectorAll('.rfs-pro-title-input')
+      ];
+
+      // Vérifier la cohérence entre les sections et leurs titres.
+      if (sections.length !== titleInputs.length) {
+        throw new Error(validationMessages.sectionsCount);
+      }
+
+      // Synchroniser les titres avec les valeurs saisies.
+      titleInputs.forEach((input, index) => {
+        sections[index].title = input.value.trim();
+      });
+
+      // Refuser les titres vides ou composés uniquement d espaces.
+      const untitledIndex = sections.findIndex(section =>
+        section.title === ''
+      );
+
+      if (untitledIndex !== -1) {
+        throw new Error(
+          validationMessages.sectionTitleRequired.replace(
+            '__RFS_SECTION_NUMBER__',
+            String(untitledIndex + 1)
+          )
+        );
+      }
+
+      // Refuser l enregistrement d une section sans champ.
+      const emptySectionIndex = sections.findIndex(section =>
+        section.left.length === 0 &&
+        (!section.right || section.right.length === 0)
+      );
+
+      if (emptySectionIndex !== -1) {
+        throw new Error(
+          validationMessages.sectionFieldRequired.replace(
+            '__RFS_SECTION_TITLE__',
+            sections[emptySectionIndex].title
+          )
+        );
+      }
+
+      // Transmettre la configuration modifiée au contrôleur.
+      sectionsInput.value = JSON.stringify(sections);
+
+      // Les validations sont passées : autoriser la navigation
+      // déclenchée par l enregistrement.
+      allowNavigation = true;
+
+    } catch (error) {
+      event.preventDefault();
+
+      alert(
+        validationMessages.prepareConfiguration +
+        ' ' +
+        error.message
+      );
+    }
+
+  });
+
+})();
+</script>
+
+<script>
+(() => {
+  const editor = document.querySelector('.rfs-pro-editor');
+  const pool = document.querySelector('[data-rfs-pool="true"]');
+  const sectionsInput = document.getElementById('rfs-pro-sections-json');
+  const saveControls = document.getElementById('rfs-pro-save-controls');
+  const counter = document.getElementById('rfs-pro-unclassified-count');
+  const searchInput = document.getElementById('rfs-pro-field-search');
+  const clearSearchButton = document.getElementById('rfs-pro-clear-search');
+  const searchResults = document.getElementById('rfs-pro-search-results');
+  const searchCount = document.getElementById('rfs-pro-search-count');
+  const searchEmpty = document.getElementById('rfs-pro-search-empty');
+
+  if (!editor || !pool || !sectionsInput || !saveControls) return;
+
+  // Ordre natif des champs personnalisés du tracker.
+  const nativeFieldOrder = JSON.parse(pool.dataset.fieldOrder || '[]');
+
+  const nativePositions = new Map(
+    nativeFieldOrder.map((id, index) => [id, index])
+  );
+
+  let draggedCard = null;
+
+  // Retrouver les zones de dépôt, y compris celles ajoutées dynamiquement.
+  function getDropZones() {
+    return [
+      ...editor.querySelectorAll('[data-rfs-column]'),
+      pool
+    ];
+  }
+
+  // Les champs existants et associés au tracker sont déplaçables.
+  // Les champs introuvables ou non associés restent fixes pour le moment.
+  editor.querySelectorAll('.rfs-pro-field[data-field-id]').forEach(card => {
+    card.draggable = !card.classList.contains('rfs-pro-field-warning');
+  });
+
+  function clearHighlight() {
+    getDropZones().forEach(zone => {
+      zone.classList.remove(
+        'rfs-pro-drop-hover',
+        'rfs-pro-drop-before'
+      );
+    });
+
+    editor.querySelectorAll('.rfs-pro-insert-before').forEach(card => {
+      card.classList.remove('rfs-pro-insert-before');
+    });
+  }
+
+  // Déterminer devant quel champ insérer la carte déplacée.
+  function findInsertionReference(zone, pointerY) {
+    const cards = [...zone.children].filter(child =>
+      child.matches('.rfs-pro-field[data-field-id]') &&
+      child !== draggedCard
+    );
+
+    return cards.find(card => {
+      const rect = card.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+
+      return pointerY < midpoint;
+    }) || null;
+  }
+
+  // Normaliser le texte pour une recherche sans distinction
+  // entre majuscules, minuscules et caractères accentués.
+  function normalizeSearchText(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  // Filtrer visuellement les champs non classés.
+  // Aucune carte n'est supprimée du DOM.
+  function applyPoolFilter() {
+    if (!searchInput) return;
+
+    const query = normalizeSearchText(searchInput.value);
+
+    const cards = [
+      ...pool.querySelectorAll(
+        ':scope > .rfs-pro-field[data-field-id]'
+      )
+    ];
+
+    let matchingCount = 0;
+
+    cards.forEach(card => {
+      const fieldId = card.dataset.fieldId || '';
+
+      const fieldName = card.querySelector(
+        '.rfs-pro-field-name'
+      )?.textContent || '';
+
+      const searchableText = normalizeSearchText(
+        `${fieldName} ID ${fieldId}`
+      );
+
+      const matches = !query || searchableText.includes(query);
+
+      card.classList.toggle('rfs-pro-filtered', !matches);
+
+      if (matches) {
+        matchingCount++;
+      }
+    });
+
+    // Afficher le nombre de résultats uniquement
+    // lorsqu'une recherche est active.
+    if (searchResults) {
+      searchResults.hidden = !query;
+    }
+
+    if (searchCount) {
+      searchCount.textContent = String(matchingCount);
+    }
+
+    // Afficher le bouton d effacement si une saisie existe.
+    if (clearSearchButton) {
+      clearSearchButton.hidden = searchInput.value.length === 0;
+    }
+
+    // Distinguer une recherche sans résultat
+    // d un panneau réellement vide.
+    if (searchEmpty) {
+      searchEmpty.hidden =
+        !query || matchingCount > 0 || cards.length === 0;
+    }
+  }
+
+  function updatePoolCounter() {
+    const count = pool.querySelectorAll(
+      ':scope > .rfs-pro-field[data-field-id]'
+    ).length;
+
+    if (counter) {
+      counter.textContent = count;
+    }
+
+    // Afficher un message si tous les champs ont été classés.
+    let emptyMessage = pool.querySelector('.rfs-pro-pool-empty');
+
+    if (!emptyMessage) {
+      emptyMessage = document.createElement('p');
+      emptyMessage.className = 'rfs-pro-pool-empty';
+      emptyMessage.textContent =
+        <%= raw l(:label_rfs_pro_all_fields_classified).to_json %>;
+      pool.appendChild(emptyMessage);
+    }
+
+    emptyMessage.hidden = count !== 0;
+
+    // Réappliquer le filtre après chaque modification du panneau.
+    applyPoolFilter();
+  }
+
+  // Début du déplacement d un champ.
+  editor.addEventListener('dragstart', event => {
+    const card = event.target.closest(
+      '.rfs-pro-field[draggable="true"][data-field-id]'
+    );
+
+    if (!card) return;
+
+    draggedCard = card;
+
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', card.dataset.fieldId);
+  });
+
+    // Survol d une zone de dépôt ou de l extérieur.
+    document.addEventListener('dragover', event => {
+      if (!draggedCard) return;
+
+      const zone = event.target instanceof Element
+        ? event.target.closest('[data-rfs-column], [data-rfs-pool]')
+        : null;
+
+      // En dehors des zones autorisées, supprimer tous les repères.
+      if (!zone || !getDropZones().includes(zone)) {
+        clearHighlight();
+        return;
+      }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+
+    clearHighlight();
+    zone.classList.add('rfs-pro-drop-hover');
+
+    // Pour les champs classiques, indiquer la position d insertion.
+    if (zone !== pool && draggedCard.dataset.fullWidth !== 'true') {
+      const beforeCard = findInsertionReference(zone, event.clientY);
+
+      if (beforeCard) {
+        zone.classList.add('rfs-pro-drop-before');
+        beforeCard.classList.add('rfs-pro-insert-before');
+      }
+    }
+  });
+
+  // Dépôt du champ.
+  editor.addEventListener('drop', event => {
+    if (!draggedCard) return;
+
+    const zone = event.target.closest(
+      '[data-rfs-column], [data-rfs-pool]'
+    );
+
+    if (!zone || !getDropZones().includes(zone)) return;
+
+    event.preventDefault();
+
+    // Déterminer la position avant d effacer les repères.
+    const insertionReference =
+      zone !== pool && draggedCard.dataset.fullWidth !== 'true'
+        ? findInsertionReference(zone, event.clientY)
+        : null;
+
+    clearHighlight();
+
+    const fieldId = Number(draggedCard.dataset.fieldId);
+
+    if (!Number.isInteger(fieldId) || fieldId <= 0) return;
+
+    const sections = JSON.parse(sectionsInput.value);
+
+    if (!Array.isArray(sections)) return;
+
+    const isPool = zone === pool;
+
+    let destinationSection = null;
+    let destinationColumn = null;
+    let destinationFieldset = null;
+
+    if (!isPool) {
+      destinationFieldset = zone.closest('[data-section-index]');
+
+      if (!destinationFieldset) return;
+
+      const sectionIndex = Number(
+        destinationFieldset.dataset.sectionIndex
+      );
+
+      destinationColumn = zone.dataset.rfsColumn;
+      destinationSection = sections[sectionIndex];
+
+      if (
+        !destinationSection ||
+        !Array.isArray(destinationSection[destinationColumn])
+      ) {
+        return;
+      }
+    }
+
+    // Vérifier si le champ est déjà affecté à une section.
+    const wasConfigured = sections.some(section =>
+      ['left', 'right'].some(column =>
+        Array.isArray(section[column]) &&
+        section[column].includes(fieldId)
+      )
+    );
+
+    // Déposer dans le panneau un champ déjà non classé : aucun effet.
+    if (isPool && !wasConfigured) return;
+
+    // Retirer le champ de son affectation actuelle.
+    for (const section of sections) {
+      for (const column of ['left', 'right']) {
+        if (!Array.isArray(section[column])) continue;
+
+        const index = section[column].indexOf(fieldId);
+
+        if (index !== -1) {
+          section[column].splice(index, 1);
+        }
+      }
+    }
+
+    if (isPool) {
+      // Retour vers les champs non classés,
+      // en respectant l ordre natif de Redmine.
+
+      const fieldPosition = nativePositions.get(fieldId);
+
+      const nextCard = [
+        ...pool.querySelectorAll(':scope > .rfs-pro-field[data-field-id]')
+      ].find(card => {
+        const otherId = Number(card.dataset.fieldId);
+        const otherPosition = nativePositions.get(otherId);
+
+        return otherPosition > fieldPosition;
+      });
+
+      const emptyMessage = pool.querySelector('.rfs-pro-pool-empty');
+
+      pool.insertBefore(
+        draggedCard,
+        nextCard || emptyMessage || null
+      );
+
+    } else {
+      // Nouvelle affectation à la position choisie.
+      const beforeId = insertionReference
+        ? Number(insertionReference.dataset.fieldId)
+        : null;
+
+      const insertionIndex = destinationSection[destinationColumn]
+        .indexOf(beforeId);
+
+      if (insertionIndex === -1) {
+        // Dépôt en fin de colonne.
+        destinationSection[destinationColumn].push(fieldId);
+      } else {
+        // Dépôt avant le champ repéré.
+        destinationSection[destinationColumn].splice(
+          insertionIndex,
+          0,
+          fieldId
+        );
+      }
+
+      // Respecter la disposition pleine largeur.
+      if (draggedCard.dataset.fullWidth === 'true') {
+        destinationFieldset.appendChild(draggedCard);
+      } else {
+        zone.insertBefore(draggedCard, insertionReference);
+      }
+    }
+
+    // Actualiser le JSON qui sera envoyé à Redmine.
+    sectionsInput.value = JSON.stringify(sections);
+
+    // Une modification a été effectuée.
+    saveControls.style.display = 'inline';
+
+    updatePoolCounter();
+
+    draggedCard = null;
+  });
+
+  editor.addEventListener('dragend', () => {
+    draggedCard = null;
+    clearHighlight();
+  });
+
+  // Permettre aux autres fonctionnalités de signaler
+  // une modification du panneau des champs non classés.
+  pool.addEventListener('rfs-pro:pool-changed', updatePoolCounter);
+
+  // Filtrer immédiatement pendant la saisie.
+  if (searchInput) {
+    searchInput.addEventListener('input', applyPoolFilter);
+
+    // La touche Échap permet également d effacer la recherche.
+    searchInput.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+
+      searchInput.value = '';
+      applyPoolFilter();
+    });
+  }
+
+  // Effacer la recherche et retrouver tous les champs.
+  if (clearSearchButton && searchInput) {
+    clearSearchButton.addEventListener('click', () => {
+      searchInput.value = '';
+      applyPoolFilter();
+      searchInput.focus();
+    });
+  }
+
+  updatePoolCounter();
+})();
+</script>
+
+<script>
+(() => {
+  const addButton = document.getElementById('rfs-pro-add-section');
+  const columnsSelect = document.getElementById(
+    'rfs-pro-new-section-columns'
+  );
+
+  const rfsSectionTexts = {
+    move: <%= raw l(:label_rfs_pro_move_section).to_json %>,
+    delete: <%= raw l(:label_rfs_pro_delete_section).to_json %>,
+    emptyLayout: <%= raw l(:label_rfs_pro_empty_layout).to_json %>,
+    fallbackTitle: <%= raw l(
+      :label_rfs_pro_section_number,
+      number: '__RFS_SECTION_NUMBER__'
+    ).to_json %>,
+    confirmDelete: <%= raw l(
+      :text_rfs_pro_confirm_delete_section,
+      title: '__RFS_SECTION_TITLE__'
+    ).to_json %>
+  };
+
+  const sectionList = document.getElementById('rfs-pro-section-list');
+  const pool = document.querySelector('[data-rfs-pool="true"]');
+  const sectionsInput = document.getElementById('rfs-pro-sections-json');
+  const saveControls = document.getElementById('rfs-pro-save-controls');
+  let noLayoutMessage = document.getElementById('rfs-pro-no-layout');
+
+  if (
+    !addButton ||
+    !columnsSelect ||
+    !sectionList ||
+    !pool ||
+    !sectionsInput ||
+    !saveControls
+  ) {
+    return;
+  }
+
+  // Construire une colonne pouvant recevoir des champs.
+  function createColumn(name, className = '') {
+    const column = document.createElement('div');
+
+    column.dataset.rfsColumn = name;
+
+    if (className) {
+      column.className = className;
+    }
+
+    return column;
+  }
+
+  // Ordre natif des champs associés au tracker.
+  const nativeFieldOrder = JSON.parse(pool.dataset.fieldOrder || '[]');
+
+  const nativePositions = new Map(
+    nativeFieldOrder.map((id, index) => [Number(id), index])
+  );
+
+  // Ajouter les commandes d une section.
+  function addDeleteButton(fieldset) {
+    const legend = fieldset.querySelector('legend');
+
+    if (!legend || legend.querySelector('.rfs-pro-delete-section')) {
+      return;
+    }
+
+    // Poignée de déplacement.
+    const handle = document.createElement('button');
+
+    handle.type = 'button';
+    handle.className = 'rfs-pro-section-handle';
+    handle.draggable = true;
+
+    const reorderTemplate = document.getElementById(
+      'rfs-pro-reorder-icon-template'
+    );
+
+    if (reorderTemplate) {
+      handle.appendChild(
+        reorderTemplate.content.cloneNode(true)
+      );
+    }
+    handle.setAttribute(
+      'aria-label',
+      rfsSectionTexts.move
+    );
+
+    legend.insertBefore(handle, legend.firstChild);
+
+    // Bouton de suppression.
+    const deleteButton = document.createElement('button');
+
+    deleteButton.type = 'button';
+    deleteButton.className = 'rfs-pro-delete-section';
+
+    const iconTemplate = document.getElementById(
+      'rfs-pro-delete-icon-template'
+    );
+
+    if (iconTemplate) {
+      deleteButton.appendChild(
+        iconTemplate.content.cloneNode(true)
+      );
+    }
+
+    deleteButton.setAttribute(
+      'aria-label',
+      rfsSectionTexts.delete
+    );
+
+    legend.appendChild(deleteButton);
+  }
+
+  // Remettre un champ dans le panneau de droite,
+  // à sa position native Redmine.
+  function restoreCardToPool(card) {
+    const fieldId = Number(card.dataset.fieldId);
+    const position = nativePositions.get(fieldId);
+
+    // Le champ n est pas associé à ce tracker :
+    // il ne doit pas apparaître dans les champs non classés.
+    if (position === undefined) {
+      return;
+    }
+
+    const nextCard = [
+      ...pool.querySelectorAll(':scope > .rfs-pro-field[data-field-id]')
+    ].find(other => {
+      const otherId = Number(other.dataset.fieldId);
+      const otherPosition = nativePositions.get(otherId);
+
+      return otherPosition !== undefined &&
+            otherPosition > position;
+    });
+
+    const emptyMessage = pool.querySelector('.rfs-pro-pool-empty');
+
+    pool.insertBefore(
+      card,
+      nextCard || emptyMessage || null
+    );
+  }
+
+  // Réindexer les sections après une suppression.
+  function reindexSections() {
+    sectionList.querySelectorAll(
+      'fieldset[data-section-index]'
+    ).forEach((fieldset, index) => {
+
+      fieldset.dataset.sectionIndex = String(index);
+
+      const titleInput = fieldset.querySelector('.rfs-pro-title-input');
+
+      if (titleInput) {
+        titleInput.id = `rfs-pro-title-${index}`;
+      }
+    });
+  }
+
+  // Ajouter les boutons aux sections déjà présentes
+  // lors du chargement de la page.
+  sectionList.querySelectorAll(
+    'fieldset[data-section-index]'
+  ).forEach(addDeleteButton);
+
+  // --------------------------------------------------
+  // Déplacement des sections par glisser-déposer
+  // --------------------------------------------------
+
+  let draggedSection = null;
+
+  // Créer un indicateur unique, indépendant des sections.
+  const insertionLine = document.createElement('div');
+  insertionLine.className = 'rfs-pro-section-insertion-line';
+
+  document.body.appendChild(insertionLine);
+
+
+  // Masquer l indicateur.
+  function hideSectionInsertionLine() {
+    insertionLine.style.display = 'none';
+  }
+
+
+  // Identifier la position d insertion correspondant au curseur.
+  function getSectionInsertionPosition(event) {
+
+    const sections = Array.from(
+      sectionList.querySelectorAll('fieldset[data-section-index]')
+    );
+
+    if (sections.length === 0) {
+      return null;
+    }
+
+    const rects = sections.map(section =>
+      section.getBoundingClientRect()
+    );
+
+    const containerRect = sectionList.getBoundingClientRect();
+
+    const firstRect = rects[0];
+    const lastRect = rects[rects.length - 1];
+
+    // Autoriser une petite marge avant la première section
+    // et après la dernière.
+    const verticalMargin = 15;
+
+    // Le curseur doit rester dans la zone autorisée.
+    if (
+      event.clientX < containerRect.left ||
+      event.clientX > containerRect.right ||
+      event.clientY < firstRect.top - verticalMargin ||
+      event.clientY > lastRect.bottom + verticalMargin
+    ) {
+      return null;
+    }
+
+    // Déterminer la position d insertion.
+    // Il existe N + 1 positions pour N sections.
+    let index = rects.findIndex(rect =>
+      event.clientY < rect.top + rect.height / 2
+    );
+
+    if (index === -1) {
+      index = sections.length;
+    }
+
+    let y;
+
+    if (index === 0) {
+
+      // Avant la première section.
+      y = firstRect.top - 10;
+
+    } else if (index === sections.length) {
+
+      // Après la dernière section.
+      y = lastRect.bottom + 8;
+
+    } else {
+
+      // Entre deux sections.
+      // Placer le trait plutôt près du bas de la section précédente,
+      // pour éviter le legend de la section suivante.
+      const previousRect = rects[index - 1];
+      const nextRect = rects[index];
+
+      y = previousRect.bottom +
+          (nextRect.top - previousRect.bottom) / 3;
+    }
+
+    return {
+      index: index,
+      y: y,
+      left: containerRect.left,
+      width: containerRect.width,
+      sections: sections
+    };
+  }
+
+
+  // Afficher le trait à la position calculée.
+  function showSectionInsertionLine(position) {
+
+    insertionLine.style.left = `${position.left}px`;
+    insertionLine.style.top = `${position.y - 1.5}px`;
+    insertionLine.style.width = `${position.width}px`;
+
+    insertionLine.style.display = 'block';
+  }
+
+
+  // Début du déplacement depuis une poignée.
+  sectionList.addEventListener('dragstart', event => {
+
+    const handle = event.target.closest(
+      '.rfs-pro-section-handle'
+    );
+
+    if (!handle) {
+      return;
+    }
+
+    draggedSection = handle.closest(
+      'fieldset[data-section-index]'
+    );
+
+    if (!draggedSection) {
+      return;
+    }
+
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', 'rfs-section');
+  });
+
+
+  // Déplacement de la souris.
+  document.addEventListener('dragover', event => {
+
+    if (!draggedSection) {
+      return;
+    }
+
+    const position = getSectionInsertionPosition(event);
+
+    if (!position) {
+      hideSectionInsertionLine();
+      return;
+    }
+
+    // Autoriser le dépôt sur cette position.
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+
+    showSectionInsertionLine(position);
+  });
+
+
+  // Dépôt de la section.
+  document.addEventListener('drop', event => {
+
+    if (!draggedSection) {
+      return;
+    }
+
+    const position = getSectionInsertionPosition(event);
+
+    hideSectionInsertionLine();
+
+    if (!position) {
+      draggedSection = null;
+      return;
+    }
+
+    event.preventDefault();
+
+    const originalIndex = position.sections.indexOf(
+      draggedSection
+    );
+
+    const insertionIndex = position.index;
+
+    // Aucun déplacement réel.
+    if (
+      insertionIndex === originalIndex ||
+      insertionIndex === originalIndex + 1
+    ) {
+      draggedSection = null;
+      return;
+    }
+
+    // Configuration avant modification du DOM.
+    const sections = JSON.parse(sectionsInput.value);
+
+    // Insérer la section à sa nouvelle position.
+    const referenceSection =
+      position.sections[insertionIndex] || null;
+
+    sectionList.insertBefore(
+      draggedSection,
+      referenceSection
+    );
+
+    // Reconstruire la configuration dans le nouvel ordre.
+    // Les anciens data-section-index permettent de retrouver
+    // la configuration correspondant à chaque section.
+    const reorderedSections = Array.from(
+      sectionList.querySelectorAll('fieldset[data-section-index]')
+    ).map(fieldset =>
+      sections[Number(fieldset.dataset.sectionIndex)]
+    );
+
+    sectionsInput.value = JSON.stringify(reorderedSections);
+
+    // Réindexer les sections et les champs de titre.
+    reindexSections();
+
+    // Signaler une modification non enregistrée.
+    saveControls.style.display = 'inline';
+
+    draggedSection = null;
+  });
+
+
+  // Fin du déplacement, y compris si le dépôt est annulé.
+  sectionList.addEventListener('dragend', () => {
+
+    draggedSection = null;
+    hideSectionInsertionLine();
+  });
+
+  // Gérer le clic sur un bouton de suppression.
+  sectionList.addEventListener('click', event => {
+    const button = event.target.closest('.rfs-pro-delete-section');
+
+    if (!button) return;
+
+    const fieldset = button.closest('fieldset[data-section-index]');
+
+    if (!fieldset) return;
+
+    const sectionIndex = Number(fieldset.dataset.sectionIndex);
+    const sections = JSON.parse(sectionsInput.value);
+
+    if (!Array.isArray(sections) || !sections[sectionIndex]) {
+      return;
+    }
+
+    // Récupérer le titre éventuellement modifié dans l éditeur.
+    const titleInput = fieldset.querySelector('.rfs-pro-title-input');
+
+    const title = titleInput?.value.trim() ||
+                  sections[sectionIndex].title ||
+                  rfsSectionTexts.fallbackTitle.replace(
+                    '__RFS_SECTION_NUMBER__',
+                    String(sectionIndex + 1)
+                  );
+
+    const confirmed = window.confirm(
+      rfsSectionTexts.confirmDelete.replace(
+        '__RFS_SECTION_TITLE__',
+        title
+      )
+    );
+
+    if (!confirmed) return;
+
+    // Récupérer les cartes contenues dans la section.
+    const cards = [
+      ...fieldset.querySelectorAll('.rfs-pro-field[data-field-id]')
+    ];
+
+    // Restituer les champs associés au tracker.
+    cards.forEach(restoreCardToPool);
+
+    // Retirer la section du JSON de travail.
+    sections.splice(sectionIndex, 1);
+    sectionsInput.value = JSON.stringify(sections);
+
+    // Supprimer la section du DOM.
+    fieldset.remove();
+
+    // Mettre à jour les indices des sections restantes.
+    reindexSections();
+
+    // Actualiser le compteur et le message du panneau de droite.
+    pool.dispatchEvent(new Event('rfs-pro:pool-changed'));
+
+    // Afficher Enregistrer / Annuler.
+    saveControls.style.display = 'inline';
+
+    // Si aucune section ne reste, réafficher le message natif.
+    if (sections.length === 0) {
+      if (!noLayoutMessage) {
+        noLayoutMessage = document.createElement('p');
+        noLayoutMessage.id = 'rfs-pro-no-layout';
+        noLayoutMessage.textContent = rfsSectionTexts.emptyLayout;
+
+        sectionList.before(noLayoutMessage);
+      }
+
+      noLayoutMessage.hidden = false;
+
+    }
+  });
+
+  // Retirer de la configuration un champ introuvable
+  // ou non associé au tracker.
+  sectionList.addEventListener('click', event => {
+    const button = event.target.closest(
+      '.rfs-pro-remove-invalid-field'
+    );
+
+    if (!button) return;
+
+    const card = button.closest(
+      '.rfs-pro-field-warning[data-field-id]'
+    );
+
+    const fieldset = card?.closest(
+      'fieldset[data-section-index]'
+    );
+
+    if (!fieldset) return;
+
+    const sectionIndex = Number(fieldset.dataset.sectionIndex);
+    const fieldId = Number(card.dataset.fieldId);
+
+    if (!Number.isInteger(fieldId) || fieldId <= 0) return;
+
+    const sections = JSON.parse(sectionsInput.value);
+
+    if (!Array.isArray(sections) || !sections[sectionIndex]) {
+      return;
+    }
+
+    const section = sections[sectionIndex];
+    let removed = false;
+
+    // Retirer toutes les références éventuelles à ce champ
+    // dans la section concernée.
+    for (const column of ['left', 'right']) {
+      if (!Array.isArray(section[column])) continue;
+
+      const previousLength = section[column].length;
+
+      section[column] = section[column].filter(
+        id => Number(id) !== fieldId
+      );
+
+      if (section[column].length !== previousLength) {
+        removed = true;
+      }
+    }
+
+    if (!removed) return;
+
+    // Actualiser la configuration de travail.
+    sectionsInput.value = JSON.stringify(sections);
+
+    // Retirer les cartes correspondant à ce champ
+    // dans cette section.
+    fieldset.querySelectorAll(
+      `.rfs-pro-field-warning[data-field-id="${fieldId}"]`
+    ).forEach(element => element.remove());
+
+    // Signaler une modification non enregistrée.
+    saveControls.style.display = 'inline';
+  });
+
+  addButton.addEventListener('click', () => {
+
+    // Configuration actuellement présente dans l éditeur.
+    const sections = JSON.parse(sectionsInput.value);
+
+    if (!Array.isArray(sections)) {
+      alert(<%= raw l(:error_rfs_pro_invalid_sections).to_json %>);
+      return;
+    }
+
+    const sectionIndex = sections.length;
+    const twoColumns = columnsSelect.value === '2';
+
+    // Préparer la nouvelle section.
+    const section = {
+      title: '',
+      left: []
+    };
+
+    if (twoColumns) {
+      section.right = [];
+    }
+
+    // Créer le fieldset.
+    const fieldset = document.createElement('fieldset');
+
+    fieldset.className = 'box rfs-pro-preview';
+    fieldset.dataset.sectionIndex = String(sectionIndex);
+
+    // Créer la légende et son titre directement modifiable.
+    const legend = document.createElement('legend');
+
+    const titleInput = document.createElement('input');
+
+    titleInput.type = 'text';
+    titleInput.name = 'titles[]';
+    titleInput.id = `rfs-pro-title-${sectionIndex}`;
+    titleInput.className = 'rfs-pro-title-input';
+
+    titleInput.placeholder =
+      <%= raw l(:label_rfs_pro_section_title).to_json %>;
+    titleInput.required = true;
+    titleInput.size = 30;
+
+    titleInput.setAttribute(
+      'aria-label',
+      <%= raw l(:label_rfs_pro_section_title).to_json %>
+    );
+
+    legend.appendChild(titleInput);
+
+    fieldset.appendChild(legend);
+
+    // Créer les colonnes.
+    if (twoColumns) {
+      const splitcontent = document.createElement('div');
+      splitcontent.className = 'splitcontent';
+
+      const left = createColumn('left', 'splitcontentleft');
+      const right = createColumn('right', 'splitcontentright');
+
+      splitcontent.appendChild(left);
+      splitcontent.appendChild(right);
+
+      fieldset.appendChild(splitcontent);
+
+    } else {
+      const left = createColumn('left');
+
+      fieldset.appendChild(left);
+    }
+
+    // Ajouter le bouton de suppression.
+    addDeleteButton(fieldset);
+
+    // Ajouter la section dans l interface.
+    sectionList.appendChild(fieldset);
+
+    // Ajouter la section dans le JSON de travail.
+    sections.push(section);
+    sectionsInput.value = JSON.stringify(sections);
+
+    // Masquer le message indiquant l absence de configuration.
+    if (noLayoutMessage) {
+      noLayoutMessage.hidden = true;
+    }
+
+    // Afficher les actions Enregistrer / Annuler.
+    saveControls.style.display = 'inline';
+
+    // Placer le curseur dans le titre.
+    titleInput.focus();
+
+  });
+})();
+</script>

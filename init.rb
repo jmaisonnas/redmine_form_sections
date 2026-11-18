@@ -13,7 +13,15 @@ Redmine::Plugin.register :redmine_form_sections do
   project_module :redmine_form_sections do
     permission :use_redmine_form_sections, {}, public: true
   end
-  
+
+  # Accès à l'éditeur graphique depuis le menu Administration.
+  menu :admin_menu,
+       :redmine_form_sections_pro,
+       { controller: 'redmine_form_sections_pro', action: 'index' },
+       caption: :label_rfs_pro_admin,
+       icon: 'custom-fields',
+       html: { class: 'icon icon-custom-fields' }
+
   settings default: {
     'layouts_yaml' => File.read(
       File.join(__dir__, 'config', 'form_layouts.yml')
@@ -23,6 +31,7 @@ end
 
 require_relative 'lib/redmine_form_sections/hooks'
 require_relative 'lib/redmine_form_sections/layout_provider'
+require_relative 'lib/redmine_form_sections_pro/layout_editor'
 require_relative 'lib/redmine_form_sections/settings_controller_patch'
 
 unless SettingsController.included_modules.include?(

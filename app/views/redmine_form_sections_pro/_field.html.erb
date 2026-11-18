@@ -1,0 +1,95 @@
+<% field = @fields_by_id[id] %>
+
+<%
+  # Codes courts et libellés natifs Redmine.
+  type_formats = {
+    'bool'        => ['BOOL',  :label_boolean],
+    'date'        => ['DATE',  :label_date],
+    'attachment'  => ['FILE',  :label_attachment],
+    'float'       => ['FLOAT', :label_float],
+    'int'         => ['INT',   :label_integer],
+    'enumeration' => ['K/V',   :label_field_format_enumeration],
+    'link'        => ['LINK',  :label_link],
+    'list'        => ['LIST',  :label_list],
+    'text'        => ['LONG',  :label_text],
+    'progressbar' => ['PROG',  :label_progressbar],
+    'string'      => ['TEXT',  :label_string],
+    'user'        => ['USER',  :label_user],
+    'version'     => ['VERS',  :label_version]
+  }
+
+  if field.nil?
+    type_code = '?'
+    type_label = nil
+  else
+    type_code, label_key = type_formats.fetch(
+      field.field_format,
+      ['CF', nil]
+    )
+
+    type_label = label_key ? l(label_key) : field.field_format
+
+    # Distinguer les listes multivaluées.
+    if field.field_format == 'list' && field.multiple?
+      type_code = 'MULTI'
+      type_label = "#{type_label} (#{l(:field_multiple)})"
+    end
+  end
+
+  # Vérifier la validité du champ pour le tracker.
+  missing = field.nil?
+
+  unassociated = !missing &&
+                 !@available_field_ids.include?(id)
+%>
+
+<p class="rfs-pro-field <%= 'rfs-pro-field-warning' if missing || unassociated %>"
+   data-field-id="<%= id %>"
+   data-full-width="<%= full_width %>">
+
+  <span class="rfs-pro-field-type"
+        title="<%= h(type_label) %>">
+    <%= type_code %>
+  </span>
+
+  <span class="rfs-pro-field-content">
+
+    <span class="rfs-pro-field-name">
+      <%= h(field&.name || l(:label_rfs_pro_field_missing)) %>
+    </span>
+
+    <span class="rfs-pro-field-id">
+      ID <%= id %>
+    </span>
+
+  </span>
+
+  <% if full_width %>
+    <span class="rfs-pro-field-width">
+      ↔ <%= l(:label_rfs_pro_full_width) %>
+    </span>
+  <% end %>
+
+  <% if missing %>
+
+    <span class="rfs-pro-field-error">
+      <%= l(:label_rfs_pro_not_found) %>
+    </span>
+
+  <% elsif unassociated %>
+
+    <span class="rfs-pro-field-error">
+      <%= l(:label_rfs_pro_not_associated) %>
+    </span>
+
+  <% end %>
+
+  <% if missing || unassociated %>
+    <button type="button"
+            class="rfs-pro-remove-invalid-field"
+            aria-label="<%= h(l(:label_rfs_pro_remove_invalid_field)) %>">
+      ×
+    </button>
+  <% end %>
+
+</p>
