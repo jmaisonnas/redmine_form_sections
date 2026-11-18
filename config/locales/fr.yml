@@ -60,3 +60,6 @@ fr:
   label_rfs_pro_clear_search: "Effacer la recherche"
   label_rfs_pro_search_results: "Champs trouvés"
   label_rfs_pro_no_search_results: "Aucun champ ne correspond à la recherche."
+
+  label_rfs_open_visual_editor: "Ouvrir l'éditeur graphique"
+  label_rfs_open_yaml_editor: "Configuration YAML (avancé)"

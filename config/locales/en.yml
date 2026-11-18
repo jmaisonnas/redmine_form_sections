@@ -60,3 +60,6 @@ en:
   label_rfs_pro_clear_search: "Clear search"
   label_rfs_pro_search_results: "Matching fields"
   label_rfs_pro_no_search_results: "No fields match your search."
+
+  label_rfs_open_visual_editor: "Open visual editor"
+  label_rfs_open_yaml_editor: "YAML configuration (advanced)"

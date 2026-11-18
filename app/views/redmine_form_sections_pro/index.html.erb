@@ -752,6 +752,14 @@
   </div>
 <% end %>
 
+<%# Accès secondaire à la configuration YAML avancée. %>
+<p style="text-align: right; margin-top: 16px;">
+  <%= link_to(
+    l(:label_rfs_open_yaml_editor),
+    plugin_settings_path('redmine_form_sections')
+  ) %>
+</p>
+
 <script>
 (() => {
   const saveControls = document.getElementById('rfs-pro-save-controls');
