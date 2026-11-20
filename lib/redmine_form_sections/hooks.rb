@@ -5,21 +5,28 @@ module RedmineFormSections
               partial: 'redmine_form_sections/form_marker'
 
     def view_issues_show_details_bottom(context = {})
-      render_issue_show_marker(context, 'rfs-issue-show-details')
+      sections = issue_show_sections(context)
+      return if sections.blank?
+
+      view = context.fetch(:hook_caller)
+      view.tag.template(id: 'rfs-issue-show-details', data: { sections: sections.to_json,
+                                                            other_fields: view.l(:label_rfs_other_fields) })
     end
 
     def view_issues_show_description_bottom(context = {})
-      render_issue_show_marker(context, 'rfs-issue-show-description-bottom')
+      return if issue_show_sections(context).blank?
+
+      view = context.fetch(:hook_caller)
+      view.render(partial: 'redmine_form_sections/issue_show_sections')
     end
 
     private
 
-    def render_issue_show_marker(context, id)
+    def issue_show_sections(context)
       issue = context[:issue]
       return unless issue&.project&.module_enabled?('redmine_form_sections')
-      return if LayoutProvider.for_issue(issue).blank?
 
-      context.fetch(:hook_caller).tag.template(id: id)
+      LayoutProvider.for_issue(issue)
     end
 
   end

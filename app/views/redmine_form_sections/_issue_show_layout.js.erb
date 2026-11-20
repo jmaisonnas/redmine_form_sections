@@ -1,0 +1,116 @@
+function arrangeIssueShowFields(document) {
+  const [start, ...otherStarts] = document.querySelectorAll('#rfs-issue-show-details');
+  const [end, ...otherEnds] = document.querySelectorAll('#rfs-issue-show-description-bottom');
+  if (!start || !end || otherStarts.length || otherEnds.length || start.dataset.rfsApplied) return;
+  if (!start.matches('template') || !end.matches('template')) return;
+
+  const attributes = start.parentElement;
+  const details = attributes?.parentElement;
+  if (!attributes?.matches('.attributes') || !details?.matches('.issue.details') || end.parentElement !== details) return;
+
+  const detailChildren = [...details.children];
+  const attributesIndex = detailChildren.indexOf(attributes);
+  const endIndex = detailChildren.indexOf(end);
+  if (endIndex <= attributesIndex) return;
+
+  const attributeChildren = [...attributes.children];
+  const blocks = attributeChildren.slice(0, attributeChildren.indexOf(start))
+    .filter(node => node.matches('.splitcontent'));
+  const [core, ordinary] = blocks;
+  if (blocks.length > 2 || !core?.querySelector(':scope > .splitcontentleft > .attribute.status')) return;
+
+  function fieldId(node) {
+    if (!node.matches('.attribute')) return;
+
+    const token = [...node.classList].find(name => /^cf_\d+$/.test(name));
+    return token?.slice(3);
+  }
+
+  const fields = [];
+  if (ordinary) {
+    const [left, right] = ordinary.children;
+    if (ordinary.children.length !== 2 || !left.matches('.splitcontentleft') || !right.matches('.splitcontentright')) return;
+
+    for (const node of [...left.children, ...right.children]) {
+      const id = fieldId(node);
+      if (!id || !node.querySelector(':scope > .label') || !node.querySelector(':scope > .value')) return;
+
+      fields.push({ id, node, fullWidth: false });
+    }
+    if (!fields.length) return;
+  }
+  const ordinaryNodes = new Set(fields.map(field => field.node));
+  if ([...attributes.querySelectorAll('.attribute')].some(node => fieldId(node) && !ordinaryNodes.has(node))) return;
+
+  for (const node of detailChildren.slice(attributesIndex + 1, endIndex)) {
+    const id = fieldId(node);
+    if (!id) continue;
+    if (!node.firstElementChild?.matches('hr') || !node.querySelector(':scope > p > strong') ||
+        !node.querySelector(':scope > .value')) return;
+
+    fields.push({ id, node, fullWidth: true });
+  }
+  if (!fields.length || new Set(fields.map(field => field.id)).size !== fields.length) return;
+
+  let layout;
+  try {
+    const sections = JSON.parse(start.dataset.sections);
+    if (!Array.isArray(sections) || !sections.length) return;
+
+    layout = planSections(sections, fields, start.dataset.otherFields);
+  } catch {
+    return;
+  }
+
+  const container = document.createElement('div');
+  container.className = 'rfs-show-sections';
+  const moves = [];
+  function prepareMoves(fields, destination) {
+    for (const { node } of fields) {
+      moves.push({ node, destination, origin: document.createComment('Form Sections') });
+    }
+  }
+
+  for (const { title, twoColumns, left, right, fullWidth } of layout) {
+    const section = container.appendChild(document.createElement('fieldset'));
+    section.className = 'rfs-section';
+    section.appendChild(document.createElement('legend')).textContent = title;
+
+    if (left.length || right.length) {
+      const columns = section.appendChild(document.createElement('div'));
+      columns.className = 'splitcontent';
+      const leftColumn = columns.appendChild(document.createElement('div'));
+      leftColumn.className = 'splitcontentleft';
+      prepareMoves(left, leftColumn);
+      if (twoColumns) {
+        const rightColumn = columns.appendChild(document.createElement('div'));
+        rightColumn.className = 'splitcontentright';
+        prepareMoves(right, rightColumn);
+      }
+    }
+    if (fullWidth.length) {
+      const wide = section.appendChild(document.createElement('div'));
+      wide.className = 'rfs-show-full-width';
+      prepareMoves(fullWidth, wide);
+    }
+  }
+  if (moves.length !== fields.length || new Set(moves.map(move => move.node)).size !== fields.length) return;
+
+  try {
+    attributes.insertBefore(container, ordinary || start);
+    for (const { node, destination, origin } of moves) {
+      node.parentNode.insertBefore(origin, node);
+      destination.appendChild(node);
+    }
+    start.dataset.rfsApplied = 'true';
+  } catch {
+    for (const { node, origin } of moves) {
+      if (origin.parentNode) origin.replaceWith(node);
+    }
+    container.remove();
+    return;
+  }
+
+  moves.forEach(({ origin }) => origin.remove());
+  ordinary?.remove();
+}

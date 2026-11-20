@@ -1,0 +1,28 @@
+<template id="rfs-issue-show-description-bottom"></template>
+
+<style>
+  .rfs-show-sections .rfs-section {
+    border: 1px solid #c5d0d8;
+    border-radius: 6px;
+    padding: 4px 10px;
+    margin-block: 8px;
+  }
+
+  .rfs-show-sections .rfs-section legend {
+    font-weight: bold;
+    padding-inline: 8px;
+  }
+
+  .issue .attributes .rfs-show-sections .rfs-show-full-width > .attribute {
+    padding-inline-start: 0;
+  }
+</style>
+
+<script>
+(() => {
+  <%= render partial: 'redmine_form_sections/section_layout', formats: [:js] %>
+  <%= render partial: 'redmine_form_sections/issue_show_layout', formats: [:js] %>
+
+  arrangeIssueShowFields(document);
+})();
+</script>

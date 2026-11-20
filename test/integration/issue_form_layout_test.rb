@@ -98,7 +98,7 @@ class RedmineFormSectionsIssueFormLayoutTest < Redmine::IntegrationTest
 
   def with_layout(trackers, &block)
     yaml = { 'trackers' => trackers }.to_yaml
-    with_settings('plugin_redmine_form_sections' => { 'layouts_yaml' => yaml }, &block)
+    with_settings({ plugin_redmine_form_sections: { 'layouts_yaml' => yaml } }, &block)
   end
 
   def assert_native_form

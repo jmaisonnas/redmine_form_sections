@@ -15,7 +15,12 @@ class RedmineFormSectionsIssueShowMarkersTest < Redmine::IntegrationTest
     full_width = add_custom_field('Full-width field', '1')
     @issue.update_column(:description, 'Description de contrôle')
 
-    with_layout([{ 'title' => 'Section', 'left' => [ordinary.id, full_width.id] }]) do
+    attachment = Attachment.first!
+    attachment.update_columns(container_type: 'Issue', container_id: @issue.id)
+    sections = [{ 'title' => %q{Quotes "' & </script><b id="rfs-test-title">Title</b>},
+                  'left' => [ordinary.id], 'right' => [full_width.id] }]
+
+    with_layout(sections) do
       get issue_path(@issue)
 
       assert_response :success
@@ -27,6 +32,74 @@ class RedmineFormSectionsIssueShowMarkersTest < Redmine::IntegrationTest
                     'template#rfs-issue-show-description-bottom', count: 1
       assert_select ".attribute.cf_#{full_width.id}", count: 1
       assert_select MARKERS, count: 2
+      assert_select '#rfs-issue-show-details', count: 1 do |markers|
+        assert_equal sections, JSON.parse(markers.first['data-sections'])
+        assert_equal I18n.t(:label_rfs_other_fields), markers.first['data-other-fields']
+      end
+      assert_select '#rfs-test-title, .rfs-show-sections', count: 0
+      assert_select 'div.issue.details > .description ~ .attachments a', text: attachment.filename
+      assert_includes response.body, 'arrangeIssueShowFields(document);'
+    end
+  end
+
+  def test_only_rendered_full_width_fields_are_available_to_the_script
+    full_width = add_custom_field('Full-width field', '1')
+    empty = add_custom_field('Empty full-width field', '1', value: '')
+    @issue.tracker.custom_fields = [empty, full_width]
+
+    with_layout([{ 'title' => 'Section', 'left' => [empty.id, full_width.id] }]) do
+      get issue_path(@issue)
+
+      assert_response :success
+      assert_select '.issue.details > .attributes .attribute[class*=" cf_"]', count: 0
+      assert_select "div.issue.details > .attribute.cf_#{full_width.id} + " \
+                    'template#rfs-issue-show-description-bottom', count: 1
+      assert_select ".attribute.cf_#{empty.id}", count: 0
+    end
+  end
+
+  def test_restricted_field_labels_and_values_are_only_sent_to_authorized_readers
+    project = @issue.project
+    reader = User.find_by!(login: 'jsmith')
+    reader_role = Role.create!(name: 'RFS visibility reader', permissions: [:view_issues], issues_visibility: 'all')
+    permitted_role = Role.create!(name: 'RFS field access', permissions: [:view_issues])
+    member = project.members.find_by(user: reader) || project.members.build(user: reader)
+    member.roles = [reader_role]
+    member.save!
+
+    restricted = %w[0 1].to_h do |width|
+      value = "RFS_RESTRICTED_VALUE_#{width}"
+      field = add_custom_field("RFS_RESTRICTED_LABEL_#{width}", width, value: value, roles: [permitted_role])
+      [field, value]
+    end
+    public_field = add_custom_field('Public visibility test field', '0')
+    sections = [
+      { 'title' => 'Restricted section', 'left' => restricted.keys.map(&:id) },
+      { 'title' => 'Public section', 'left' => [public_field.id] }
+    ]
+
+    with_layout(sections) do
+      get issue_path(@issue)
+
+      assert_response :success
+      restricted.each do |field, value|
+        assert_select ".issue.details .attribute.cf_#{field.id}", count: 1
+        assert_includes response.body, field.name
+        assert_includes response.body, value
+      end
+
+      reset!
+      log_user('jsmith', 'jsmith')
+      get issue_path(@issue)
+
+      assert_response :success
+      assert_select '#rfs-issue-show-details', count: 1
+      assert_select ".issue.details .attribute.cf_#{public_field.id}", count: 1
+      restricted.each do |field, value|
+        assert_select ".attribute.cf_#{field.id}", count: 0
+        assert_not_includes response.body, field.name
+        assert_not_includes response.body, value
+      end
     end
   end
 
@@ -39,7 +112,7 @@ class RedmineFormSectionsIssueShowMarkersTest < Redmine::IntegrationTest
   end
 
   def test_no_markers_when_tracker_is_missing_or_has_no_sections
-    with_settings('plugin_redmine_form_sections' => { 'layouts_yaml' => 'trackers: {}' }) do
+    with_settings(plugin_redmine_form_sections: { 'layouts_yaml' => 'trackers: {}' }) do
       assert_no_markers_on_issue
     end
 
@@ -50,14 +123,14 @@ class RedmineFormSectionsIssueShowMarkersTest < Redmine::IntegrationTest
 
   def with_layout(sections, &block)
     config = { 'trackers' => { @issue.tracker_id => sections } }
-    with_settings('plugin_redmine_form_sections' => { 'layouts_yaml' => config.to_yaml }, &block)
+    with_settings({ plugin_redmine_form_sections: { 'layouts_yaml' => config.to_yaml } }, &block)
   end
 
-  def add_custom_field(name, full_width_layout)
+  def add_custom_field(name, full_width_layout, value: name, roles: [])
     field = IssueCustomField.create!(name: name, field_format: 'string', is_for_all: true,
-                                     visible: true, trackers: [@issue.tracker],
+                                     visible: roles.empty?, roles: roles, trackers: [@issue.tracker],
                                      full_width_layout: full_width_layout)
-    CustomValue.create!(customized: @issue, custom_field: field, value: name)
+    CustomValue.create!(customized: @issue, custom_field: field, value: value)
     field
   end
 
@@ -66,5 +139,6 @@ class RedmineFormSectionsIssueShowMarkersTest < Redmine::IntegrationTest
 
     assert_response :success
     assert_select MARKERS, count: 0
+    assert_not_includes response.body, 'arrangeIssueShowFields(document);'
   end
 end
