@@ -8,25 +8,45 @@ class FixtureNode {
     this.dataset = {};
     this.nodes = [];
     this.parentNode = null;
+    this.listeners = {};
   }
 
-  get classList() { return this.className.split(' ').filter(Boolean); }
+  get classList() {
+    const classes = this.className.split(' ').filter(Boolean);
+    classes.toggle = (name, force) => {
+      this.className = [...classes.filter(value => value !== name), ...(force ? [name] : [])].join(' ');
+    };
+    return classes;
+  }
   get parentElement() { return this.parentNode; }
   get children() { return this.nodes.filter(node => node.tag !== '#comment'); }
   get firstElementChild() { return this.children[0]; }
+  get innerText() { return [this.textContent || '', ...this.children.map(child => child.innerText)].join(''); }
+
+  getAttribute(attribute) { return this[attribute] ?? null; }
+  getClientRects() { return this.rendered === false ? [] : [{}]; }
+
+  addEventListener(type, callback) { (this.listeners[type] ||= []).push(callback); }
+  dispatchEvent(event) { (this.listeners[event.type] || []).forEach(callback => callback(event)); }
 
   matches(selector) {
     if (selector.startsWith('#')) return this.id === selector.slice(1);
     if (selector.startsWith('.')) return selector.slice(1).split('.').every(name => this.classList.includes(name));
+    if (selector === 'input[type="checkbox"]') return this.tag === 'input' && this.type === 'checkbox';
     return this.tag === selector;
   }
 
   querySelectorAll(selector) {
     const descendants = this.children.flatMap(child => [child, ...child.querySelectorAll('*')]);
-    return selector === '*' ? descendants : descendants.filter(child => child.matches(selector));
+    if (selector === '*') return descendants;
+
+    const selectors = selector.split(', ');
+    return descendants.filter(child => selectors.some(part => child.matches(part)));
   }
 
   querySelector(selector) {
+    if (!selector.startsWith(':scope > ')) return this.querySelectorAll(selector)[0];
+
     return selector.split(' > ').slice(1).reduce((parent, part) =>
       parent?.children.find(child => child.matches(part)), this);
   }
@@ -56,6 +76,7 @@ class FixtureNode {
 
 function issueFixture(sections, { ordinary = [1, 2], wide = [3, 4] } = {}) {
   const document = new FixtureNode('document');
+  document.defaultView = new FixtureNode('window');
   document.createElement = tag => new FixtureNode(tag);
   document.createComment = () => new FixtureNode('#comment');
   const add = (parent, tag, classes) => parent.appendChild(new FixtureNode(tag, classes));
@@ -94,6 +115,13 @@ function issueFixture(sections, { ordinary = [1, 2], wide = [3, 4] } = {}) {
   });
   const end = add(details, 'template');
   end.id = 'rfs-issue-show-description-bottom';
+  end.content = new FixtureNode('fragment');
+  const filter = add(end.content, 'label', 'rfs-show-filter');
+  filter.cloneNode = () => {
+    const label = new FixtureNode('label', 'rfs-show-filter');
+    add(label, 'input').type = 'checkbox';
+    return label;
+  };
 
   return { document, details, attributes, start, end, fields,
            descriptionSeparator, description, attachmentsSeparator, attachments, attachmentLink };
@@ -104,7 +132,7 @@ function testIssueShowLayout(arrangeIssueShowFields) {
     if (!condition) throw new Error(description);
   }
   function snapshot(node) {
-    return JSON.stringify([node.tag, node.id, node.className, node.textContent, node.dataset, node.nodes.map(snapshot)]);
+    return JSON.stringify([node.tag, node.id, node.className, node.textContent, node.checked, node.dataset, node.nodes.map(snapshot)]);
   }
 
   const mixed = issueFixture([
@@ -115,8 +143,8 @@ function testIssueShowLayout(arrangeIssueShowFields) {
   arrangeIssueShowFields(mixed.document);
   const [container] = mixed.document.querySelectorAll('.rfs-show-sections');
   check(mixed.attributes.children[1] === container, 'Sections replace the native ordinary block');
-  const [section, other] = container.children;
-  check(container.children.length === 2, 'Omitted fields create no section');
+  const [control, section, other] = container.children;
+  check(control.matches('.rfs-show-filter') && container.children.length === 3, 'Omitted fields create no section');
   check(section.children[0].textContent === '<b>Mixed</b>' && !section.children[0].children.length, 'Title is text');
   check(section.querySelector(':scope > .splitcontent > .splitcontentleft').firstElementChild === mixed.fields[1],
         'Ordinary field in configured column');
@@ -196,7 +224,61 @@ function testIssueShowLayout(arrangeIssueShowFields) {
     const native = snapshot(fixture.document);
     arrangeIssueShowFields(fixture.document);
     check(snapshot(fixture.document) === native, `Native DOM preserved with ${name}`);
+    check(!fixture.document.querySelectorAll('.rfs-show-filter').length, `No filter with ${name}`);
   }
+
+  const filtered = issueFixture([
+    { title: 'Mixed values', left: [1, 2, 3, 4, 5] },
+    { title: 'Only empty values', left: [6, 7, 8, 9, 10] }
+  ], { ordinary: [1, 2, 3, 4, 6, 7, 8, 9, 10], wide: [5] });
+  const value = id => filtered.fields[id].querySelector(':scope > .value');
+  value(2).textContent = 'Some text';
+  value(3).textContent = '0';
+  value(4).textContent = 'Non';
+  value(5).firstElementChild.appendChild(filtered.document.createElement('img')).src = '/files/example.png';
+  value(6).textContent = ' \n\u00a0\u200b';
+  value(7).appendChild(filtered.document.createElement('p')).appendChild(filtered.document.createElement('br'));
+  value(8).appendChild(filtered.document.createElement('img')).src = '';
+  const hiddenImage = value(9).appendChild(filtered.document.createElement('img'));
+  hiddenImage.src = '/files/hidden.png';
+  hiddenImage.rendered = false;
+  value(10).appendChild(filtered.document.createElement('svg')).appendChild(filtered.document.createElement('path')).d = '';
+
+  arrangeIssueShowFields(filtered.document);
+  const [filterControl] = filtered.document.querySelectorAll('.rfs-show-filter');
+  const checkbox = filterControl.firstElementChild;
+  const [mixedSection, emptySection] = filtered.document.querySelectorAll('.rfs-section');
+  const isHidden = node => node.matches('.rfs-hidden-by-filter');
+  const beforeFilter = snapshot(filtered.document);
+  check(checkbox.checked === false && !filtered.document.querySelectorAll('.rfs-hidden-by-filter').length,
+        'Filter starts unchecked with all native fields present');
+
+  function toggle(checkbox, checked) {
+    checkbox.checked = checked;
+    checkbox.dispatchEvent({ type: 'change' });
+  }
+  toggle(checkbox, true);
+  check([1, 6, 7, 8, 9, 10].every(id => isHidden(filtered.fields[id])), 'Only empty values are hidden');
+  check([2, 3, 4, 5].every(id => !isHidden(filtered.fields[id])), 'Text, zero, No and image-only values stay visible');
+  check(!isHidden(mixedSection) && isHidden(emptySection), 'Only sections with no value are hidden');
+  const applied = snapshot(filtered.document);
+  arrangeIssueShowFields(filtered.document);
+  check(snapshot(filtered.document) === applied, 'A second arrangement leaves the filter state unchanged');
+  toggle(checkbox, false);
+  check(snapshot(filtered.document) === beforeFilter, 'Unchecking restores the same DOM in place');
+  toggle(checkbox, true);
+  filtered.document.defaultView.dispatchEvent({ type: 'pageshow', persisted: true });
+  check(snapshot(filtered.document) === beforeFilter, 'Returning from the browser cache resets the filter');
+
+  const allEmpty = issueFixture([{ title: 'One', left: [1] }, { title: 'Two', left: [2] }], { wide: [] });
+  arrangeIssueShowFields(allEmpty.document);
+  const [allEmptyControl] = allEmpty.document.querySelectorAll('.rfs-show-filter');
+  const allEmptyBefore = snapshot(allEmpty.document);
+  toggle(allEmptyControl.firstElementChild, true);
+  check(allEmpty.document.querySelectorAll('.rfs-section').every(isHidden) && !isHidden(allEmptyControl) &&
+        !isHidden(allEmptyControl.parentNode), 'The checkbox stays visible when all sections are hidden');
+  toggle(allEmptyControl.firstElementChild, false);
+  check(snapshot(allEmpty.document) === allEmptyBefore, 'Unchecking restores all sections immediately');
 }
 
 // Run with: node test/javascript/issue_show_layout_test.js

@@ -38,7 +38,33 @@ class RedmineFormSectionsIssueShowMarkersTest < Redmine::IntegrationTest
       end
       assert_select '#rfs-test-title, .rfs-show-sections', count: 0
       assert_select 'div.issue.details > .description ~ .attachments a', text: attachment.filename
+      assert_select 'template#rfs-issue-show-description-bottom > label.rfs-show-filter',
+                    text: I18n.t(:label_rfs_hide_empty_fields), count: 1 do
+        assert_select 'input[type="checkbox"][autocomplete="off"]:not([checked])', count: 1
+      end
       assert_includes response.body, 'arrangeIssueShowFields(document);'
+    end
+  end
+
+  def test_native_values_are_kept_in_the_initial_response_for_the_filter
+    empty = add_custom_field('Empty ordinary field', '0', value: '')
+    zero = add_custom_field('Zero field', '0', value: '0', field_format: 'int')
+    negative = add_custom_field('Negative field', '0', value: '0', field_format: 'bool')
+    image = add_custom_field('Rich image field', '1', value: '![](https://example.test/image.png)',
+                             field_format: 'text', text_formatting: 'full')
+    sections = [{ 'title' => 'Filter values', 'left' => [empty.id, zero.id, negative.id, image.id] }]
+
+    with_settings(text_formatting: 'common_mark') do
+      with_layout(sections) do
+        get issue_path(@issue)
+
+        assert_response :success
+        assert_select ".attribute.cf_#{empty.id} > .value", text: '', count: 1
+        assert_select ".attribute.cf_#{zero.id} > .value", text: '0', count: 1
+        assert_select ".attribute.cf_#{negative.id} > .value", text: I18n.t(:general_text_No), count: 1
+        assert_select ".attribute.cf_#{image.id} > .value .wiki img[src='https://example.test/image.png']", count: 1
+        assert_select '.rfs-hidden-by-filter', count: 0
+      end
     end
   end
 
@@ -126,10 +152,10 @@ class RedmineFormSectionsIssueShowMarkersTest < Redmine::IntegrationTest
     with_settings({ plugin_redmine_form_sections: { 'layouts_yaml' => config.to_yaml } }, &block)
   end
 
-  def add_custom_field(name, full_width_layout, value: name, roles: [])
-    field = IssueCustomField.create!(name: name, field_format: 'string', is_for_all: true,
+  def add_custom_field(name, full_width_layout, value: name, roles: [], field_format: 'string', **options)
+    field = IssueCustomField.create!(name: name, field_format: field_format, is_for_all: true,
                                      visible: roles.empty?, roles: roles, trackers: [@issue.tracker],
-                                     full_width_layout: full_width_layout)
+                                     full_width_layout: full_width_layout, **options)
     CustomValue.create!(customized: @issue, custom_field: field, value: value)
     field
   end
@@ -139,6 +165,7 @@ class RedmineFormSectionsIssueShowMarkersTest < Redmine::IntegrationTest
 
     assert_response :success
     assert_select MARKERS, count: 0
+    assert_select 'label.rfs-show-filter', count: 0
     assert_not_includes response.body, 'arrangeIssueShowFields(document);'
   end
 end

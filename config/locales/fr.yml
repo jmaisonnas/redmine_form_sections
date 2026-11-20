@@ -1,6 +1,7 @@
 fr:
   project_module_redmine_form_sections: "Form Sections"
   label_rfs_other_fields: "Autres champs"
+  label_rfs_hide_empty_fields: "Masquer les champs non renseignés"
   label_rfs_layouts_yaml: "Configuration des formulaires"
   label_rfs_export_yaml: "Exporter la configuration YAML"
   text_rfs_layouts_yaml_help: "Définissez les sections et la disposition des champs pour chaque tracker au format YAML."

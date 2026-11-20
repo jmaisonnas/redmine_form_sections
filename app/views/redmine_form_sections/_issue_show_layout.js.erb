@@ -1,3 +1,47 @@
+function hasRenderedFieldValue(value) {
+  if (value.innerText.replace(/[\s\u200B]/g, '')) return true;
+
+  return [...value.querySelectorAll('img, svg, video, audio')].some(media => {
+    const visible = media.checkVisibility?.({ visibilityProperty: true }) ?? (media.getClientRects().length > 0);
+    if (!visible) return false;
+
+    const sources = [media, ...media.querySelectorAll('source, use, image, path')];
+    return sources.some(source => ['src', 'srcset', 'poster', 'href', 'xlink:href', 'd']
+      .some(attribute => source.getAttribute(attribute)?.trim()));
+  });
+}
+
+function attachEmptyFieldFilter(checkbox, sections, window) {
+  let emptyFields;
+  function updateFilter() {
+    if (checkbox.checked && !emptyFields) {
+      // Inspect all values while the fields are still in their original visibility state.
+      emptyFields = new Set(sections.flatMap(({ nodes }) => nodes).filter(node =>
+        !hasRenderedFieldValue(node.querySelector(':scope > .value'))
+      ));
+    }
+
+    for (const { section, nodes } of sections) {
+      let visible = false;
+      for (const node of nodes) {
+        const hide = checkbox.checked && emptyFields.has(node);
+        node.classList.toggle('rfs-hidden-by-filter', hide);
+        if (!hide) visible = true;
+      }
+      section.classList.toggle('rfs-hidden-by-filter', !visible);
+    }
+  }
+
+  checkbox.checked = false;
+  checkbox.addEventListener('change', updateFilter);
+  window?.addEventListener('pageshow', event => {
+    if (!event.persisted) return;
+
+    checkbox.checked = false;
+    updateFilter();
+  });
+}
+
 function arrangeIssueShowFields(document) {
   const [start, ...otherStarts] = document.querySelectorAll('#rfs-issue-show-details');
   const [end, ...otherEnds] = document.querySelectorAll('#rfs-issue-show-description-bottom');
@@ -64,6 +108,12 @@ function arrangeIssueShowFields(document) {
 
   const container = document.createElement('div');
   container.className = 'rfs-show-sections';
+  const label = end.content.firstElementChild?.cloneNode(true);
+  const checkbox = label?.querySelector(':scope > input[type="checkbox"]');
+  if (!checkbox) return;
+
+  container.appendChild(label);
+  const filterSections = [];
   const moves = [];
   function prepareMoves(fields, destination) {
     for (const { node } of fields) {
@@ -75,6 +125,7 @@ function arrangeIssueShowFields(document) {
     const section = container.appendChild(document.createElement('fieldset'));
     section.className = 'rfs-section';
     section.appendChild(document.createElement('legend')).textContent = title;
+    filterSections.push({ section, nodes: [...left, ...right, ...fullWidth].map(field => field.node) });
 
     if (left.length || right.length) {
       const columns = section.appendChild(document.createElement('div'));
@@ -102,6 +153,7 @@ function arrangeIssueShowFields(document) {
       node.parentNode.insertBefore(origin, node);
       destination.appendChild(node);
     }
+    attachEmptyFieldFilter(checkbox, filterSections, document.defaultView);
     start.dataset.rfsApplied = 'true';
   } catch {
     for (const { node, origin } of moves) {
