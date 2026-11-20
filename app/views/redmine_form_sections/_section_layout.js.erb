@@ -1,0 +1,53 @@
+function planSections(sections, fields, otherFieldsTitle) {
+  if (!sections.length) return [];
+
+  const fieldsById = new Map();
+  for (const field of fields) {
+    const id = String(field.id);
+    if (!fieldsById.has(id)) fieldsById.set(id, field);
+  }
+
+  const assigned = new Set();
+  function takeFields(ids) {
+    const result = [];
+    for (const id of ids) {
+      const field = fieldsById.get(String(id));
+      if (!field || assigned.has(field)) continue;
+
+      assigned.add(field);
+      result.push(field);
+    }
+    return result;
+  }
+
+  const result = [];
+  for (const section of sections) {
+    const twoColumns = Object.prototype.hasOwnProperty.call(section, 'right');
+    const left = takeFields(section.left);
+    const right = twoColumns ? takeFields(section.right) : [];
+    if (!left.length && !right.length) continue;
+
+    result.push({
+      title: section.title,
+      twoColumns,
+      left: left.filter(field => !field.fullWidth),
+      right: right.filter(field => !field.fullWidth),
+      fullWidth: [...left, ...right].filter(field => field.fullWidth)
+    });
+  }
+
+  const remaining = fields.filter(field => !assigned.has(field));
+  if (remaining.length) {
+    const ordinary = remaining.filter(field => !field.fullWidth);
+    const leftCount = Math.ceil(ordinary.length / 2);
+    result.push({
+      title: otherFieldsTitle,
+      twoColumns: true,
+      left: ordinary.slice(0, leftCount),
+      right: ordinary.slice(leftCount),
+      fullWidth: remaining.filter(field => field.fullWidth)
+    });
+  }
+
+  return result;
+}
