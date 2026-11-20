@@ -12,15 +12,12 @@ function hasRenderedFieldValue(value) {
 }
 
 function attachEmptyFieldFilter(checkbox, sections, window) {
-  let emptyFields;
-  function updateFilter() {
-    if (checkbox.checked && !emptyFields) {
-      // Inspect all values while the fields are still in their original visibility state.
-      emptyFields = new Set(sections.flatMap(({ nodes }) => nodes).filter(node =>
-        !hasRenderedFieldValue(node.querySelector(':scope > .value'))
-      ));
-    }
+  // Inspect all values before the filter changes their visibility.
+  const emptyFields = new Set(sections.flatMap(({ nodes }) => nodes).filter(node =>
+    !hasRenderedFieldValue(node.querySelector(':scope > .value'))
+  ));
 
+  function updateFilter() {
     for (const { section, nodes } of sections) {
       let visible = false;
       for (const node of nodes) {
@@ -32,13 +29,15 @@ function attachEmptyFieldFilter(checkbox, sections, window) {
     }
   }
 
-  checkbox.checked = false;
+  function resetFilter() {
+    checkbox.checked = true;
+    updateFilter();
+  }
+
+  resetFilter();
   checkbox.addEventListener('change', updateFilter);
   window?.addEventListener('pageshow', event => {
-    if (!event.persisted) return;
-
-    checkbox.checked = false;
-    updateFilter();
+    if (event.persisted) resetFilter();
   });
 }
 
@@ -117,7 +116,7 @@ function arrangeIssueShowFields(document) {
   const moves = [];
   function prepareMoves(fields, destination) {
     for (const { node } of fields) {
-      moves.push({ node, destination, origin: document.createComment('Form Sections') });
+      moves.push({ node, destination, origin: document.createComment('Form Sections'), originalClassName: node.className });
     }
   }
 
@@ -156,8 +155,11 @@ function arrangeIssueShowFields(document) {
     attachEmptyFieldFilter(checkbox, filterSections, document.defaultView);
     start.dataset.rfsApplied = 'true';
   } catch {
-    for (const { node, origin } of moves) {
-      if (origin.parentNode) origin.replaceWith(node);
+    for (const { node, origin, originalClassName } of moves) {
+      if (!origin.parentNode) continue;
+
+      node.className = originalClassName;
+      origin.replaceWith(node);
     }
     container.remove();
     return;

@@ -15,6 +15,7 @@ class FixtureNode {
     const classes = this.className.split(' ').filter(Boolean);
     classes.toggle = (name, force) => {
       this.className = [...classes.filter(value => value !== name), ...(force ? [name] : [])].join(' ');
+      this.afterClassToggle?.();
     };
     return classes;
   }
@@ -211,6 +212,18 @@ function testIssueShowLayout(arrangeIssueShowFields) {
   arrangeIssueShowFields(failing.document);
   check(failing.document.querySelectorAll('.rfs-show-sections').length === 1, 'Retry after rollback succeeds');
 
+  const filterFailure = issueFixture([{ title: 'Mixed', left: [1, 3] }]);
+  const nativeBeforeFilter = snapshot(filterFailure.document);
+  let filterErrorInjected = false;
+  filterFailure.fields[3].afterClassToggle = () => {
+    filterErrorInjected = true;
+    throw new Error('Injected initial filter failure');
+  };
+  arrangeIssueShowFields(filterFailure.document);
+  check(filterErrorInjected && snapshot(filterFailure.document) === nativeBeforeFilter &&
+        !filterFailure.document.querySelectorAll('.rfs-show-filter').length,
+        'Initial filter failure restores native positions and classes without a checkbox');
+
   for (const [name, prepare] of [
     ['missing anchor', fixture => fixture.end.remove()],
     ['empty layout', fixture => { fixture.start.dataset.sections = '[]'; }],
@@ -249,36 +262,40 @@ function testIssueShowLayout(arrangeIssueShowFields) {
   const checkbox = filterControl.firstElementChild;
   const [mixedSection, emptySection] = filtered.document.querySelectorAll('.rfs-section');
   const isHidden = node => node.matches('.rfs-hidden-by-filter');
-  const beforeFilter = snapshot(filtered.document);
-  check(checkbox.checked === false && !filtered.document.querySelectorAll('.rfs-hidden-by-filter').length,
-        'Filter starts unchecked with all native fields present');
+  check(checkbox.checked === true, 'Filter starts checked on consultation');
 
   function toggle(checkbox, checked) {
     checkbox.checked = checked;
     checkbox.dispatchEvent({ type: 'change' });
   }
-  toggle(checkbox, true);
-  check([1, 6, 7, 8, 9, 10].every(id => isHidden(filtered.fields[id])), 'Only empty values are hidden');
+  check([1, 6, 7, 8, 9, 10].every(id => isHidden(filtered.fields[id])), 'Empty values are hidden immediately');
   check([2, 3, 4, 5].every(id => !isHidden(filtered.fields[id])), 'Text, zero, No and image-only values stay visible');
   check(!isHidden(mixedSection) && isHidden(emptySection), 'Only sections with no value are hidden');
   const applied = snapshot(filtered.document);
   arrangeIssueShowFields(filtered.document);
   check(snapshot(filtered.document) === applied, 'A second arrangement leaves the filter state unchanged');
+  const positions = Object.values(filtered.fields).map(node => [node, node.parentNode, node.parentNode.nodes.indexOf(node)]);
   toggle(checkbox, false);
-  check(snapshot(filtered.document) === beforeFilter, 'Unchecking restores the same DOM in place');
+  check(!filtered.document.querySelectorAll('.rfs-hidden-by-filter').length &&
+        positions.every(([node, parent, index]) => parent.nodes[index] === node),
+        'Unchecking restores the original nodes in place');
+  const unfiltered = snapshot(filtered.document);
   toggle(checkbox, true);
+  check(snapshot(filtered.document) === applied, 'Checking again restores the initial filtered state');
+  toggle(checkbox, false);
+  filtered.document.defaultView.dispatchEvent({ type: 'pageshow', persisted: false });
+  check(snapshot(filtered.document) === unfiltered, 'An initial pageshow does not override an active consultation');
   filtered.document.defaultView.dispatchEvent({ type: 'pageshow', persisted: true });
-  check(snapshot(filtered.document) === beforeFilter, 'Returning from the browser cache resets the filter');
+  check(snapshot(filtered.document) === applied, 'Returning from the browser cache resets the filter to checked');
 
   const allEmpty = issueFixture([{ title: 'One', left: [1] }, { title: 'Two', left: [2] }], { wide: [] });
   arrangeIssueShowFields(allEmpty.document);
   const [allEmptyControl] = allEmpty.document.querySelectorAll('.rfs-show-filter');
-  const allEmptyBefore = snapshot(allEmpty.document);
-  toggle(allEmptyControl.firstElementChild, true);
-  check(allEmpty.document.querySelectorAll('.rfs-section').every(isHidden) && !isHidden(allEmptyControl) &&
-        !isHidden(allEmptyControl.parentNode), 'The checkbox stays visible when all sections are hidden');
+  check(allEmptyControl.firstElementChild.checked && allEmpty.document.querySelectorAll('.rfs-section').every(isHidden) &&
+        !isHidden(allEmptyControl) && !isHidden(allEmptyControl.parentNode),
+        'The checked checkbox stays visible when all sections are hidden initially');
   toggle(allEmptyControl.firstElementChild, false);
-  check(snapshot(allEmpty.document) === allEmptyBefore, 'Unchecking restores all sections immediately');
+  check(!allEmpty.document.querySelectorAll('.rfs-hidden-by-filter').length, 'Unchecking restores all sections immediately');
 }
 
 // Run with: node test/javascript/issue_show_layout_test.js
