@@ -2,26 +2,27 @@
 
 [🇬🇧 English documentation](README.md)
 
-Redmine Form Sections est un plugin permettant de personnaliser la disposition des champs personnalisés (*Custom Fields*) dans les formulaires Redmine.
+Redmine Form Sections organise les champs personnalisés (*Custom Fields*) des tickets Redmine, en création, en modification et en consultation.
 
 Il permet de regrouper ces champs dans des sections nommées, organisées sur une ou deux colonnes.
 
-**Le plugin agit exclusivement sur les champs personnalisés.** Les champs natifs de Redmine (Sujet, Description, Statut, Priorité, Assigné à, etc.) conservent leur disposition habituelle.
+**Le plugin agit exclusivement sur les champs personnalisés.** Les attributs natifs de Redmine, la description et les pièces jointes conservent leur disposition habituelle.
 
 ## Fonctionnalités
 
-- Configuration des sections par tracker à l'aide d'un éditeur graphique intégré.
+- Configuration d'une disposition par tracker pour les trois vues du ticket, à l'aide d'un éditeur graphique intégré.
 - Création, renommage et suppression des sections, avec réorganisation par glisser-déposer.
 - Répartition et réorganisation visuelle des champs personnalisés sur une ou deux colonnes.
 - Recherche parmi les champs non classés.
 - Activation du plugin individuellement par projet.
+- Filtre des champs non renseignés en consultation, coché par défaut.
 - Validation avant enregistrement et détection des modifications concurrentes.
 - Consultation, modification et export de la configuration YAML pour les usages avancés.
 - Interface d'administration disponible en français et en anglais.
 
-Le plugin réorganise les champs existants dans le formulaire. Il ne modifie ni leur définition ni leurs valeurs.
+Le plugin réorganise les champs présents dans chaque vue. Leurs définitions et leurs valeurs restent gérées par Redmine.
 
-## Aperçu
+## Aperçu visuel
 
 ### Formulaire Redmine natif
 
@@ -37,17 +38,81 @@ Le plugin permet de regrouper les champs personnalisés dans des sections foncti
 
 ### Compatibilité avec les thèmes Redmine
 
-Les sections s'adaptent aux différents thèmes Redmine, notamment aux thèmes sombres.
+Le rendu a été vérifié sur Redmine 7.0.3 avec le thème par défaut et Modern Redmine Theme.
 
 ![Formulaire avec un thème sombre](docs/images/form-sections-dark.png)
 
-## Éditeur graphique
+### Le filtre en consultation
+
+**Filtre activé (comportement par défaut)**
+
+![Fiche de consultation avec la case cochée et les champs vides masqués](docs/images/issue-show-filter-enabled-fr.png)
+
+**Filtre désactivé (tous les champs restitués par Redmine)**
+
+![Fiche de consultation avec la case décochée et les champs vides visibles](docs/images/issue-show-filter-disabled-fr.png)
+
+### Aperçu de l’éditeur graphique
+
+![Éditeur graphique de disposition des champs](docs/images/visual-editor-fr.png)
+
+## Compatibilité
+
+Version du plugin : **1.0.0**
+
+| Version de Redmine | Validation effectuée |
+| --- | --- |
+| **4.1.2** | Recette manuelle de la consultation, y compris des champs pleine largeur. |
+| **7.0.3** | Version utilisée pour le développement, les tests automatisés et la recette manuelle, dont la consultation et la réinitialisation de la configuration. |
+
+La compatibilité de l'ensemble des fonctionnalités décrites avec Redmine 4.2.x et les autres versions reste à vérifier.
+
+## Installation et démarrage rapide
+
+Seul le répertoire du plugin `redmine_form_sections` est nécessaire. Aucun plugin d'édition graphique séparé ni aucune migration de base de données ne sont requis.
+
+1. Copier le répertoire `redmine_form_sections` dans le répertoire `plugins` de Redmine.
+2. Redémarrer Redmine.
+3. Dans **Administration > Plugins**, vérifier que « Redmine Form Sections » apparaît dans la liste.
+4. Accéder à **Administration > Form Sections** et enregistrer une disposition pour un tracker.
+5. [Activer le module](#activer-le-module-sur-un-projet) dans chaque projet concerné.
+6. Ouvrir un ticket du tracker configuré dans ce projet pour retrouver les sections.
+
+### Activer le module sur un projet
+
+1. Ouvrir le projet.
+2. Accéder à **Configuration > Modules**.
+3. Cocher **Form Sections**.
+4. Enregistrer.
+
+À la première installation, la configuration est vide (`trackers: {}`). L'activation du module seule laisse les tickets dans leur présentation native.
+
+## Présentation des tickets
+
+Le module doit être actif dans le projet et le tracker doit avoir une disposition valide comportant au moins une section. La même disposition s'applique en création, en modification et en consultation. Sans disposition applicable, Redmine affiche le ticket dans sa présentation native.
+
+Les titres des sections s'affichent en majuscules. Le texte enregistré dans la configuration est conservé.
+
+### Création et modification
+
+- La disposition fixe l'ordre des sections, le nombre de colonnes et l'ordre des champs dans chaque colonne.
+- Les champs présents et non affectés à une section rejoignent une dernière section « Autres champs ». Une section sans champ présent n'est pas affichée.
+- Le plugin déplace les contrôles générés par Redmine, y compris les éditeurs de texte avec formatage. Redmine continue de gérer les champs disponibles pour le projet et le tracker, les permissions, la validation et l'enregistrement des valeurs.
+
+### Consultation
+
+- Les sections prennent la place du bloc des champs personnalisés ordinaires, avant la description. Elles regroupent uniquement les champs que Redmine a déjà rendus pour l'utilisateur. Les règles de visibilité, les libellés, les liens et le formatage des valeurs sont conservés.
+- Les champs ordinaires suivent la disposition configurée et les champs pleine largeur apparaissent sous les colonnes de leur section. Un champ pleine largeur vide que Redmine omet reste absent. Les champs rendus qui ne sont pas classés rejoignent « Autres champs ».
+- La case **Masquer les champs non renseignés** est cochée par défaut. Elle masque les champs vides et les sections qui ne contiennent plus de champ visible. Une valeur `0`, « Non » ou une image visible compte comme renseignée.
+- Décocher la case réaffiche les champs masqués sans recharger la page. La case reste accessible même si toutes les sections sont masquées. Chaque nouvelle consultation réactive le filtre, sans enregistrer de préférence.
+
+## Administration
+
+### Éditeur graphique
 
 **L'éditeur graphique est intégré à Redmine Form Sections 1.0.0.** Aucun plugin complémentaire n'est nécessaire.
 
 Accéder à **Administration > Form Sections** pour configurer les sections d'un tracker sans modifier manuellement le YAML.
-
-![Éditeur graphique de disposition des champs](docs/images/visual-editor-fr.png)
 
 L'éditeur permet de :
 
@@ -61,48 +126,36 @@ L'éditeur permet de :
 
 Les titres des sections et les noms des champs affichés sur la capture proviennent de l'instance Redmine : ils ne dépendent pas de la langue de l'interface.
 
-## Configuration YAML avancée
+### Configuration YAML avancée
 
-La même configuration reste accessible au format YAML depuis **Administration > Plugins > Redmine Form Sections > Configurer**. Cet accès est surtout utile pour la consultation, la sauvegarde, l'export ou le dépannage avancé.
+La même configuration peut être consultée, modifiée et exportée au format YAML depuis **Administration > Plugins > Redmine Form Sections > Configurer**.
 
 L'éditeur graphique propose également un lien secondaire **Configuration YAML (avancé)**.
 
 ![Configuration YAML avancée](docs/images/configuration-yaml-fr.png)
 
-Les deux interfaces utilisent la même configuration enregistrée : aucune synchronisation supplémentaire n'est nécessaire.
+Les deux interfaces utilisent la même configuration enregistrée. Si le YAML saisi est invalide, l'enregistrement est refusé et l'erreur est affichée. Si une configuration invalide est déjà présente en base, les tickets utilisent le rendu natif. L'éditeur graphique signale le problème et l'enregistrement y reste bloqué jusqu'à la correction du YAML dans les paramètres du plugin.
 
-## Comportement des formulaires
+### Réinitialiser la configuration
 
-- Un tracker absent de la configuration conserve le formulaire Redmine natif.
-- Un tracker déclaré avec une liste de sections vide (`1: []`) conserve également le formulaire natif.
-- Une section sans champ présent dans le formulaire n'est pas affichée.
-- Les champs non affectés à une section sont regroupés dans une section « Autres champs », lorsqu'ils sont présents.
-- Les champs absents du formulaire ne sont pas ajoutés artificiellement.
+- **Pour un tracker**, supprimer toutes ses sections dans l'éditeur graphique et enregistrer. En YAML, supprimer l'entrée du tracker ou lui attribuer une liste vide, par exemple `1: []`.
+- **Pour tous les trackers**, enregistrer `trackers: {}` dans la configuration YAML avancée. Dans l'éditeur graphique, supprimer les sections et enregistrer pour chaque tracker configuré.
 
-## Compatibilité
+Les tickets concernés retrouvent leur présentation native dès la prochaine ouverture en création, en modification ou en consultation. Les deux interfaces restent utilisables pour créer une nouvelle disposition.
 
-Version du plugin : **1.0.0**
+### Export de la configuration
 
-Testé avec Redmine **4.1.2**, **4.2.6** et **7.0.3**.
+L'écran d'administration permet de télécharger la configuration YAML.
 
-Le plugin a également été testé avec différents thèmes, notamment le thème par défaut de Redmine. La compatibilité avec les autres versions de Redmine n'est pas garantie.
-
-## Installation
-
-1. Copier le répertoire `redmine_form_sections` dans le répertoire `plugins` de Redmine.
-2. Redémarrer Redmine.
-3. Dans **Administration > Plugins**, vérifier que « Redmine Form Sections » apparaît dans la liste.
-4. Accéder à **Administration > Form Sections** pour ouvrir l'éditeur graphique.
-
-Seul le répertoire du plugin `redmine_form_sections` est nécessaire. Aucun plugin d'édition graphique séparé ni aucune migration de base de données ne sont requis.
+L'export est réservé aux administrateurs Redmine.
 
 ## Mise à jour
 
 Avant de mettre à jour le plugin, il est recommandé de :
 
 1. Vérifier la compatibilité de la nouvelle version avec la version de Redmine utilisée.
-2. Exporter la configuration YAML depuis **Administration > Plugins > Redmine Form Sections > Configurer**.
-3. Sauvegarder le répertoire du plugin actuellement installé, ainsi que le fichier `config/form_layouts.yml` s'il a été personnalisé.
+2. Exporter la configuration YAML depuis **Administration > Plugins > Redmine Form Sections > Configurer**, si l'export est disponible dans la version installée.
+3. Sauvegarder le répertoire du plugin actuellement installé.
 4. Prévoir un redémarrage de Redmine.
 
 ### Procédure (y compris depuis la version 0.1.1)
@@ -111,17 +164,13 @@ Avant de mettre à jour le plugin, il est recommandé de :
 2. Remplacer le répertoire `plugins/redmine_form_sections` par celui de la nouvelle version, en conservant exactement le même nom de répertoire.
 3. Redémarrer Redmine.
 4. Dans **Administration > Plugins**, vérifier que la version 1.0.0 est détectée et qu'un seul plugin Redmine Form Sections est installé.
-5. Vérifier la conservation de la configuration YAML, l'ouverture de l'éditeur graphique et le fonctionnement des formulaires personnalisés.
+5. Vérifier la conservation de la configuration YAML, l'ouverture de l'éditeur graphique et la présentation des tickets.
 
 ### Conservation de la configuration
 
-La configuration YAML enregistrée depuis l'administration est stockée dans les paramètres de Redmine, en base de données.
+La configuration YAML valide enregistrée depuis l'administration est stockée en base de données dans les paramètres Redmine. Elle est conservée lors du remplacement des fichiers du plugin.
 
-Elle est donc normalement conservée lors du remplacement des fichiers du plugin.
-
-**Attention :** si le fichier `config/form_layouts.yml` a été personnalisé directement, ses modifications doivent être conservées lors de la mise à jour.
-
-L'export YAML préalable constitue une sauvegarde supplémentaire permettant de restaurer facilement la configuration.
+L'ancien fichier `config/form_layouts.yml` est supprimé. Il ne sert plus de configuration initiale ni de secours. Si vos dispositions étaient définies uniquement dans ce fichier, conservez-en une copie avant la mise à jour, puis reportez son contenu dans la configuration YAML avancée et enregistrez-le.
 
 ### Environnements avec plusieurs serveurs applicatifs
 
@@ -139,28 +188,23 @@ En cas de problème :
 
 1. Restaurer le répertoire de la version précédente.
 2. Redémarrer les instances Redmine concernées.
-3. Vérifier le fonctionnement des formulaires.
+3. Vérifier la présentation des tickets.
 
 La configuration YAML enregistrée dans Redmine est conservée.
 
-## Activation
+## Administration avancée
 
-La disposition des sections est configurée de manière centralisée par tracker, mais le module du plugin doit être activé sur chaque projet où elle doit s'appliquer. Les projets sur lesquels il est désactivé conservent le formulaire natif Redmine.
+### Activation
 
-### Activer le module sur un projet
+La disposition est configurée par tracker. Activez le module dans chaque projet où elle doit s'appliquer.
 
-1. Ouvrir le projet.
-2. Accéder à **Configuration > Modules**.
-3. Cocher **Form Sections**.
-4. Enregistrer.
-
-### Activer le module par défaut pour les nouveaux projets
+#### Activer le module par défaut pour les nouveaux projets
 
 Accéder à **Administration > Configuration > Projets**, puis cocher **Form Sections** dans **Modules activés par défaut pour les nouveaux projets**. Enregistrer.
 
 **Ce réglage concerne uniquement les projets créés ensuite.** Les projets existants ne sont pas modifiés.
 
-### Activer le module sur tous les projets existants
+#### Activer le module sur tous les projets existants
 
 Un administrateur peut activer le module en masse avec le *Rails runner* de Redmine. C'est préférable à une insertion directe en base : la méthode native `Project#enable_module!` conserve les autres modules et ignore les projets pour lesquels le module est déjà actif.
 
@@ -195,20 +239,20 @@ Exécuter ces commandes depuis le répertoire de l'application Redmine, avec son
 
 La commande concerne tous les projets existants, y compris les projets archivés ou fermés. Elle ne définit **pas** les modules par défaut des futurs projets : utiliser le réglage précédent pour cela.
 
-## Désactivation
+### Désactivation
 
-Le plugin peut être désactivé sans être désinstallé et sans perdre la configuration des formulaires.
+La désactivation du module préserve la configuration des sections.
 
-### Désactiver le module sur un projet
+#### Désactiver le module sur un projet
 
 1. Ouvrir le projet.
 2. Accéder à **Configuration > Modules**.
 3. Décocher **Form Sections**.
 4. Enregistrer.
 
-Le projet retrouve immédiatement la présentation native des formulaires Redmine.
+Le projet retrouve immédiatement la présentation native des tickets en création, en modification et en consultation.
 
-### Désactiver le module sur tous les projets existants
+#### Désactiver le module sur tous les projets existants
 
 Un administrateur peut désactiver le module en masse avec le *Rails runner* de Redmine.
 
@@ -246,9 +290,7 @@ Pour éviter l'activation automatique du module sur les nouveaux projets, accéd
 
 La désactivation conserve la configuration YAML et ne supprime aucun champ personnalisé. Le module peut être réactivé ultérieurement sans reconfigurer les sections.
 
-**Attention :** vider simplement la configuration YAML n'est pas une méthode de désactivation recommandée. Le plugin dispose d'un mécanisme de repli sur le fichier `config/form_layouts.yml` lorsqu'aucune configuration enregistrée n'est exploitable.
-
-## Désinstallation
+### Désinstallation
 
 Pour désinstaller complètement Redmine Form Sections :
 
@@ -272,11 +314,7 @@ Les paramètres enregistrés par le plugin peuvent subsister dans la base de don
 
 Pour l'administration courante, utiliser l'éditeur graphique accessible depuis **Administration > Form Sections**. La référence ci-dessous décrit le format YAML utilisé par le plugin, également accessible depuis **Administration > Plugins > Redmine Form Sections > Configurer**.
 
-La configuration enregistrée dans les paramètres du plugin est prioritaire.
-
-Le fichier `config/form_layouts.yml` fournit la configuration initiale et sert de repli lorsqu'aucune configuration enregistrée n'est exploitable.
-
-La configuration est commune à tous les projets utilisant un même tracker.
+Seule la configuration enregistrée dans les paramètres du plugin est utilisée. La disposition d'un tracker est commune aux projets où le module est actif.
 
 ### Exemple de configuration
 
@@ -363,7 +401,7 @@ Seules les propriétés `title`, `left` et `right` sont autorisées dans une sec
 
 ### Champs personnalisés en pleine largeur
 
-Le plugin respecte l'option native de Redmine permettant d'afficher un champ personnalisé sur toute la largeur du formulaire.
+Le plugin respecte l'option native de Redmine permettant d'afficher un champ personnalisé en pleine largeur.
 
 Lorsqu'un champ est configuré en pleine largeur dans Redmine :
 
@@ -372,39 +410,23 @@ Lorsqu'un champ est configuré en pleine largeur dans Redmine :
 - S'il n'est déclaré dans aucune section, il est placé à la fin de la section automatique « Autres champs ».
 - Si une section contient uniquement des champs en pleine largeur, aucune structure de colonnes inutile n'est créée.
 
-Le plugin conserve les contrôles HTML générés par Redmine, y compris les éditeurs de texte avec formatage.
-
-Cette personnalisation concerne exclusivement les champs personnalisés. Les champs natifs de Redmine ne sont pas réorganisés.
-
-## Export de la configuration
-
-L'écran d'administration permet de télécharger la configuration YAML.
-
-L'export est réservé aux administrateurs Redmine.
-
 ## Tests
 
-Le code source contient des tests unitaires et des tests d'intégration.
+Les tests Ruby et Rails dans `test/unit` et `test/integration` couvrent la validation du YAML, la réinitialisation dans les deux interfaces, les conflits d'enregistrement, l'export et ses restrictions d'accès. Ils vérifient aussi les formulaires de création et de modification, le changement de tracker, le HTML de consultation et les permissions sur les champs.
 
-Ils permettent notamment de vérifier :
+Les tests JavaScript couvrent le calcul des sections, le regroupement sur les structures HTML de Redmine 4.1.2 et 7.0.3, le filtre et le repli vers le rendu natif. Exécuter les commandes suivantes depuis le répertoire du plugin, avec Node.js.
 
-- La validation des configurations YAML.
-- La détection des configurations incorrectes.
-- Le comportement de l'administration et la validation dans l'éditeur graphique.
-- La détection des modifications réalisées par un autre administrateur avant l'enregistrement.
-- L'export et ses restrictions d'accès.
+```bash
+node test/javascript/section_layout_test.js
+node test/javascript/issue_show_layout_test.js
+```
 
-Ces tests ne sont pas nécessaires au fonctionnement normal du plugin.
+Les tests d'intégration nécessitent une installation Redmine et une base de test dédiée. Le plugin s'installe et fonctionne dans Redmine sans Docker ni Node.js.
 
 ## Limitations actuelles
 
-- La configuration des sections est définie par tracker. Elle est commune à tous les projets utilisant ce tracker.
-- La disposition des champs natifs de Redmine (Sujet, Description, Statut, Priorité, etc.) n'est pas personnalisable.
-- Le plugin réorganise uniquement les champs personnalisés effectivement présents dans le formulaire.
-- Le rendu dépend du thème Redmine utilisé. Des différences mineures de présentation peuvent apparaître selon les thèmes.
-- La compatibilité a été testée sur les versions de Redmine indiquées ci-dessus ; d’autres versions peuvent se comporter différemment.
-
-L'éditeur graphique est intégré au plugin ; il ne change pas les limites décrites ci-dessus.
+- Le regroupement dans les vues du ticket utilise JavaScript. En consultation, une structure HTML native inattendue laisse la fiche dans son rendu Redmine.
+- Le rendu visuel peut varier selon le thème.
 
 ## Auteur
 
