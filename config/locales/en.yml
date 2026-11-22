@@ -55,7 +55,7 @@ en:
   error_rfs_pro_invalid_data: "The submitted data format is invalid."
 
   text_rfs_pro_confirm_tracker_change: "You have unsaved changes.\n\nSwitching trackers will discard them.\n\nDo you want to continue?"
-  warning_rfs_pro_invalid_yaml_fallback: "The saved YAML configuration is invalid. The editor is using the fallback configuration. Changes cannot be saved until the YAML has been corrected in the plugin settings."
+  warning_rfs_pro_invalid_yaml: "The saved YAML configuration is invalid. Issues use the default Redmine layout. Correct the YAML in the plugin settings before saving changes in the visual editor."
 
   label_rfs_pro_search_fields: "Search for a field (name or ID)"
   label_rfs_pro_clear_search: "Clear search"

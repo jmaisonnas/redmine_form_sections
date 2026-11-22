@@ -492,7 +492,7 @@
   }
 
   /* Avertissement lorsque le YAML enregistré est invalide */
-  .rfs-pro-fallback-warning {
+  .rfs-pro-invalid-yaml-warning {
     margin: 8px 0 18px;
     padding: 12px 14px;
 
@@ -533,14 +533,13 @@
 
 <% end %>
 
+<% if @invalid_saved_yaml %>
+  <div class="rfs-pro-invalid-yaml-warning" role="alert">
+    <%= l(:warning_rfs_pro_invalid_yaml) %>
+  </div>
+<% end %>
+
 <% if @tracker %>
-
-  <% if @invalid_saved_yaml %>
-    <div class="rfs-pro-fallback-warning" role="alert">
-      <%= l(:warning_rfs_pro_invalid_yaml_fallback) %>
-    </div>
-  <% end %>
-
   <div class="rfs-pro-editor">
 
     <div class="rfs-pro-editor-main">

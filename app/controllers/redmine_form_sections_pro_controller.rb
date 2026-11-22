@@ -8,6 +8,9 @@ class RedmineFormSectionsProController < ApplicationController
 
   def index
     @trackers = Tracker.order(:position, :id)
+    yaml_text = Setting.plugin_redmine_form_sections['layouts_yaml']
+    config = RedmineFormSections::LayoutProvider.parse_config(yaml_text)
+    @invalid_saved_yaml = config.nil?
 
     # Rechercher le tracker sélectionné.
     @tracker = @trackers.find do |tracker|
@@ -19,21 +22,8 @@ class RedmineFormSectionsProController < ApplicationController
     # Champs personnalisés associés au tracker sélectionné.
     @available_fields = @tracker.custom_fields.order(:position, :id)
 
-    # Lire la configuration enregistrée par le plugin.
-    yaml_text = Setting.plugin_redmine_form_sections['layouts_yaml']
-
     # Identifier la version de la configuration actuellement affichée.
     @yaml_fingerprint = Digest::SHA256.hexdigest(yaml_text.to_s)
-
-    config = RedmineFormSections::LayoutProvider.parse_config(yaml_text)
-
-    # Identifier l'utilisation de la configuration de secours.
-    @invalid_saved_yaml = config.nil?
-
-    # Même repli que dans le plugin.
-    config ||= RedmineFormSections::LayoutProvider.parse_config(
-      File.read(RedmineFormSections::LayoutProvider::CONFIG_PATH)
-    )
 
     @sections = config&.dig('trackers', @tracker.id) || []
 

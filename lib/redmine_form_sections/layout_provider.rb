@@ -14,30 +14,9 @@ module RedmineFormSections
       end
     end
 
-    CONFIG_PATH = File.expand_path(
-      '../../config/form_layouts.yml',
-      __dir__
-    )
-
     def self.for_issue(issue)
-      # Configuration enregistrée dans Redmine
-      settings_yaml = nil
-
-      if defined?(Setting)
-        settings_yaml = Setting.plugin_redmine_form_sections['layouts_yaml']
-      end
-
-      # Utiliser la configuration Redmine si elle est valide,
-      # sinon revenir au fichier de configuration initial
-      config = parse_config(settings_yaml)
-
-      config ||= parse_config(File.read(CONFIG_PATH))
-
-      # Aucune configuration exploitable
-      return nil unless config
-
-      # Rechercher la configuration du tracker
-      config.dig('trackers', issue.tracker_id.to_i)
+      yaml_text = Setting.plugin_redmine_form_sections['layouts_yaml']
+      parse_config(yaml_text)&.dig('trackers', issue.tracker_id.to_i)
     end
 
     def self.parse_config(yaml_text)

@@ -55,7 +55,7 @@ fr:
   error_rfs_pro_invalid_data: "Le format des données transmises est incorrect."
 
   text_rfs_pro_confirm_tracker_change: "Des modifications ne sont pas enregistrées.\n\nChanger de tracker entraînera leur perte.\n\nVoulez-vous continuer ?"
-  warning_rfs_pro_invalid_yaml_fallback: "La configuration YAML enregistrée est invalide. L'éditeur utilise la configuration de secours. Les modifications ne pourront pas être enregistrées tant que le YAML n'aura pas été corrigé dans les paramètres du plugin."
+  warning_rfs_pro_invalid_yaml: "La configuration YAML enregistrée est invalide. Les tickets utilisent la présentation native de Redmine. Corrigez le YAML dans les paramètres du plugin avant d'enregistrer des modifications dans l'éditeur graphique."
 
   label_rfs_pro_search_fields: "Rechercher un champ (nom ou ID)"
   label_rfs_pro_clear_search: "Effacer la recherche"

@@ -23,9 +23,7 @@ Redmine::Plugin.register :redmine_form_sections do
        html: { class: 'icon icon-custom-fields' }
 
   settings default: {
-    'layouts_yaml' => File.read(
-      File.join(__dir__, 'config', 'form_layouts.yml')
-    )
+    'layouts_yaml' => "trackers: {}\n"
   }, partial: 'settings/redmine_form_sections'
 end
 
