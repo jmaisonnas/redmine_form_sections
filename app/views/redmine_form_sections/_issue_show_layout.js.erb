@@ -1,0 +1,172 @@
+function hasRenderedFieldValue(value) {
+  if (value.innerText.replace(/[\s\u200B]/g, '')) return true;
+
+  return [...value.querySelectorAll('img, svg, video, audio')].some(media => {
+    const visible = media.checkVisibility?.({ visibilityProperty: true }) ?? (media.getClientRects().length > 0);
+    if (!visible) return false;
+
+    const sources = [media, ...media.querySelectorAll('source, use, image, path')];
+    return sources.some(source => ['src', 'srcset', 'poster', 'href', 'xlink:href', 'd']
+      .some(attribute => source.getAttribute(attribute)?.trim()));
+  });
+}
+
+function attachEmptyFieldFilter(checkbox, sections, window) {
+  // Inspect all values before the filter changes their visibility.
+  const emptyFields = new Set(sections.flatMap(({ nodes }) => nodes).filter(node =>
+    !hasRenderedFieldValue(node.querySelector(':scope > .value'))
+  ));
+
+  function updateFilter() {
+    for (const { section, nodes } of sections) {
+      let visible = false;
+      for (const node of nodes) {
+        const hide = checkbox.checked && emptyFields.has(node);
+        node.classList.toggle('rfs-hidden-by-filter', hide);
+        if (!hide) visible = true;
+      }
+      section.classList.toggle('rfs-hidden-by-filter', !visible);
+    }
+  }
+
+  function resetFilter() {
+    checkbox.checked = true;
+    updateFilter();
+  }
+
+  resetFilter();
+  checkbox.addEventListener('change', updateFilter);
+  window?.addEventListener('pageshow', event => {
+    if (event.persisted) resetFilter();
+  });
+}
+
+function arrangeIssueShowFields(document) {
+  const [start, ...otherStarts] = document.querySelectorAll('#rfs-issue-show-details');
+  const [end, ...otherEnds] = document.querySelectorAll('#rfs-issue-show-description-bottom');
+  if (!start || !end || otherStarts.length || otherEnds.length || start.dataset.rfsApplied) return;
+  if (!start.matches('template') || !end.matches('template')) return;
+
+  const attributes = start.parentElement;
+  const details = attributes?.parentElement;
+  if (!attributes?.matches('.attributes') || !details?.matches('.issue.details') || end.parentElement !== details) return;
+
+  const detailChildren = [...details.children];
+  const attributesIndex = detailChildren.indexOf(attributes);
+  const endIndex = detailChildren.indexOf(end);
+  if (endIndex <= attributesIndex) return;
+
+  const attributeChildren = [...attributes.children];
+  const blocks = attributeChildren.slice(0, attributeChildren.indexOf(start))
+    .filter(node => node.matches('.splitcontent'));
+  const [core, ordinary] = blocks;
+  if (blocks.length > 2 || !core?.querySelector(':scope > .splitcontentleft > .attribute.status')) return;
+
+  function fieldId(node) {
+    if (!node.matches('.attribute')) return;
+
+    const token = [...node.classList].find(name => /^cf_\d+$/.test(name));
+    return token?.slice(3);
+  }
+
+  const fields = [];
+  if (ordinary) {
+    // Redmine 4.1 uses splitcontentleft for both columns. Keep their DOM order.
+    const columns = [...ordinary.children];
+    if (columns.length !== 2 ||
+        columns.some(column => !column.matches('div') || !column.matches('.splitcontentleft, .splitcontentright'))) return;
+
+    for (const node of columns.flatMap(column => [...column.children])) {
+      const id = fieldId(node);
+      if (!id || !node.querySelector(':scope > .label') || !node.querySelector(':scope > .value')) return;
+
+      fields.push({ id, node, fullWidth: false });
+    }
+    if (!fields.length) return;
+  }
+  const ordinaryNodes = new Set(fields.map(field => field.node));
+  if ([...attributes.querySelectorAll('.attribute')].some(node => fieldId(node) && !ordinaryNodes.has(node))) return;
+
+  for (const node of detailChildren.slice(attributesIndex + 1, endIndex)) {
+    const id = fieldId(node);
+    if (!id) continue;
+    if (!node.firstElementChild?.matches('hr') || !node.querySelector(':scope > p > strong') ||
+        !node.querySelector(':scope > .value')) return;
+
+    fields.push({ id, node, fullWidth: true });
+  }
+  if (!fields.length || new Set(fields.map(field => field.id)).size !== fields.length) return;
+
+  let layout;
+  try {
+    const sections = JSON.parse(start.dataset.sections);
+    if (!Array.isArray(sections) || !sections.length) return;
+
+    layout = planSections(sections, fields, start.dataset.otherFields);
+  } catch {
+    return;
+  }
+
+  const container = document.createElement('div');
+  container.className = 'rfs-show-sections';
+  const label = end.content.firstElementChild?.cloneNode(true);
+  const checkbox = label?.querySelector(':scope > input[type="checkbox"]');
+  if (!checkbox) return;
+
+  container.appendChild(label);
+  const filterSections = [];
+  const moves = [];
+  function prepareMoves(fields, destination) {
+    for (const { node } of fields) {
+      moves.push({ node, destination, origin: document.createComment('Form Sections'), originalClassName: node.className });
+    }
+  }
+
+  for (const { title, twoColumns, left, right, fullWidth } of layout) {
+    const section = container.appendChild(document.createElement('fieldset'));
+    section.className = 'rfs-section';
+    section.appendChild(document.createElement('legend')).textContent = title;
+    filterSections.push({ section, nodes: [...left, ...right, ...fullWidth].map(field => field.node) });
+
+    if (left.length || right.length) {
+      const columns = section.appendChild(document.createElement('div'));
+      columns.className = 'splitcontent';
+      const leftColumn = columns.appendChild(document.createElement('div'));
+      leftColumn.className = 'splitcontentleft';
+      prepareMoves(left, leftColumn);
+      if (twoColumns) {
+        const rightColumn = columns.appendChild(document.createElement('div'));
+        rightColumn.className = 'splitcontentright';
+        prepareMoves(right, rightColumn);
+      }
+    }
+    if (fullWidth.length) {
+      const wide = section.appendChild(document.createElement('div'));
+      wide.className = 'rfs-show-full-width';
+      prepareMoves(fullWidth, wide);
+    }
+  }
+  if (moves.length !== fields.length || new Set(moves.map(move => move.node)).size !== fields.length) return;
+
+  try {
+    attributes.insertBefore(container, ordinary || start);
+    for (const { node, destination, origin } of moves) {
+      node.parentNode.insertBefore(origin, node);
+      destination.appendChild(node);
+    }
+    attachEmptyFieldFilter(checkbox, filterSections, document.defaultView);
+    start.dataset.rfsApplied = 'true';
+  } catch {
+    for (const { node, origin, originalClassName } of moves) {
+      if (!origin.parentNode) continue;
+
+      node.className = originalClassName;
+      origin.replaceWith(node);
+    }
+    container.remove();
+    return;
+  }
+
+  moves.forEach(({ origin }) => origin.remove());
+  ordinary?.remove();
+}

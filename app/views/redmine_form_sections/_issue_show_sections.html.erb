@@ -1,0 +1,47 @@
+<template id="rfs-issue-show-description-bottom">
+  <label class="rfs-show-filter">
+    <input type="checkbox" autocomplete="off">
+    <%= l(:label_rfs_hide_empty_fields) %>
+  </label>
+</template>
+
+<style>
+  .rfs-show-sections > .rfs-show-filter {
+    display: block;
+  }
+
+  .rfs-show-sections > .rfs-section.rfs-hidden-by-filter,
+  .rfs-show-sections > .rfs-section .attribute.rfs-hidden-by-filter {
+    display: none;
+  }
+
+  .rfs-show-sections .rfs-section {
+    border: 1px solid #c5d0d8;
+    border-radius: 6px;
+    padding: 4px 10px;
+    margin-block: 8px;
+  }
+
+  .rfs-show-sections .rfs-section legend {
+    font-weight: bold;
+    padding-inline: 8px;
+    text-transform: uppercase;
+  }
+
+  .attributes .rfs-show-sections > .rfs-section > .splitcontent > :is(.splitcontentleft, .splitcontentright, .splitcontenttop) {
+    border-width: 0;
+  }
+
+  .issue .attributes .rfs-show-sections .rfs-show-full-width > .attribute {
+    padding-inline-start: 0;
+  }
+</style>
+
+<script>
+(() => {
+  <%= render partial: 'redmine_form_sections/section_layout', formats: [:js] %>
+  <%= render partial: 'redmine_form_sections/issue_show_layout', formats: [:js] %>
+
+  arrangeIssueShowFields(document);
+})();
+</script>

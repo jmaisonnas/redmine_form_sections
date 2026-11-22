@@ -1,6 +1,6 @@
 require 'digest'
 
-class RedmineFormSectionsProController < ApplicationController
+class RedmineFormSectionsEditorController < ApplicationController
   layout 'admin'
 
   before_action :require_admin
@@ -8,6 +8,9 @@ class RedmineFormSectionsProController < ApplicationController
 
   def index
     @trackers = Tracker.order(:position, :id)
+    yaml_text = Setting.plugin_redmine_form_sections['layouts_yaml']
+    config = RedmineFormSections::LayoutProvider.parse_config(yaml_text)
+    @invalid_saved_yaml = config.nil?
 
     # Rechercher le tracker sélectionné.
     @tracker = @trackers.find do |tracker|
@@ -19,21 +22,8 @@ class RedmineFormSectionsProController < ApplicationController
     # Champs personnalisés associés au tracker sélectionné.
     @available_fields = @tracker.custom_fields.order(:position, :id)
 
-    # Lire la configuration enregistrée par le plugin.
-    yaml_text = Setting.plugin_redmine_form_sections['layouts_yaml']
-
     # Identifier la version de la configuration actuellement affichée.
     @yaml_fingerprint = Digest::SHA256.hexdigest(yaml_text.to_s)
-
-    config = RedmineFormSections::LayoutProvider.parse_config(yaml_text)
-
-    # Identifier l'utilisation de la configuration de secours.
-    @invalid_saved_yaml = config.nil?
-
-    # Même repli que dans le plugin.
-    config ||= RedmineFormSections::LayoutProvider.parse_config(
-      File.read(RedmineFormSections::LayoutProvider::CONFIG_PATH)
-    )
 
     @sections = config&.dig('trackers', @tracker.id) || []
 
@@ -80,22 +70,22 @@ class RedmineFormSectionsProController < ApplicationController
     current_fingerprint = Digest::SHA256.hexdigest(yaml_text.to_s)
 
     if params[:yaml_fingerprint].to_s != current_fingerprint
-      flash[:error] = l(:error_rfs_pro_configuration_changed)
+      flash[:error] = l(:error_rfs_editor_configuration_changed)
 
-      return redirect_to rfs_pro_path(tracker_id: tracker.id)
+      return redirect_to rfs_editor_path(tracker_id: tracker.id)
     end
 
     # Récupérer la disposition complète transmise par l'éditeur.
     sections = JSON.parse(params[:sections_json].to_s)
 
     unless sections.is_a?(Array)
-      flash[:error] = l(:error_rfs_pro_invalid_layout)
+      flash[:error] = l(:error_rfs_editor_invalid_layout)
 
-      return redirect_to rfs_pro_path(tracker_id: tracker.id)
+      return redirect_to rfs_editor_path(tracker_id: tracker.id)
     end
 
     # Construire et valider le nouveau YAML.
-    new_yaml = RedmineFormSectionsPro::LayoutEditor.build_yaml(
+    new_yaml = RedmineFormSections::LayoutEditor.build_yaml(
       yaml_text: yaml_text,
       tracker_id: tracker.id,
       sections: sections
@@ -108,13 +98,13 @@ class RedmineFormSectionsProController < ApplicationController
 
     flash[:notice] = l(:notice_successful_update)
 
-    redirect_to rfs_pro_path(tracker_id: tracker.id)
+    redirect_to rfs_editor_path(tracker_id: tracker.id)
 
   rescue JSON::ParserError
 
-    flash[:error] = l(:error_rfs_pro_invalid_data)
+    flash[:error] = l(:error_rfs_editor_invalid_data)
 
-    redirect_to rfs_pro_path(tracker_id: params[:tracker_id])
+    redirect_to rfs_editor_path(tracker_id: params[:tracker_id])
 
   rescue RedmineFormSections::LayoutProvider::InvalidConfiguration => e
 
@@ -123,7 +113,7 @@ class RedmineFormSectionsProController < ApplicationController
       **e.interpolation
     )
 
-    redirect_to rfs_pro_path(tracker_id: params[:tracker_id])
+    redirect_to rfs_editor_path(tracker_id: params[:tracker_id])
   end
 
 end

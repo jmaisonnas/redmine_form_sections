@@ -43,51 +43,51 @@
                  !@available_field_ids.include?(id)
 %>
 
-<p class="rfs-pro-field <%= 'rfs-pro-field-warning' if missing || unassociated %>"
+<p class="rfs-editor-field <%= 'rfs-editor-field-warning' if missing || unassociated %>"
    data-field-id="<%= id %>"
    data-full-width="<%= full_width %>">
 
-  <span class="rfs-pro-field-type"
+  <span class="rfs-editor-field-type"
         title="<%= h(type_label) %>">
     <%= type_code %>
   </span>
 
-  <span class="rfs-pro-field-content">
+  <span class="rfs-editor-field-content">
 
-    <span class="rfs-pro-field-name">
-      <%= h(field&.name || l(:label_rfs_pro_field_missing)) %>
+    <span class="rfs-editor-field-name">
+      <%= h(field&.name || l(:label_rfs_editor_field_missing)) %>
     </span>
 
-    <span class="rfs-pro-field-id">
+    <span class="rfs-editor-field-id">
       ID <%= id %>
     </span>
 
   </span>
 
   <% if full_width %>
-    <span class="rfs-pro-field-width">
-      ↔ <%= l(:label_rfs_pro_full_width) %>
+    <span class="rfs-editor-field-width">
+      ↔ <%= l(:label_rfs_editor_full_width) %>
     </span>
   <% end %>
 
   <% if missing %>
 
-    <span class="rfs-pro-field-error">
-      <%= l(:label_rfs_pro_not_found) %>
+    <span class="rfs-editor-field-error">
+      <%= l(:label_rfs_editor_not_found) %>
     </span>
 
   <% elsif unassociated %>
 
-    <span class="rfs-pro-field-error">
-      <%= l(:label_rfs_pro_not_associated) %>
+    <span class="rfs-editor-field-error">
+      <%= l(:label_rfs_editor_not_associated) %>
     </span>
 
   <% end %>
 
   <% if missing || unassociated %>
     <button type="button"
-            class="rfs-pro-remove-invalid-field"
-            aria-label="<%= h(l(:label_rfs_pro_remove_invalid_field)) %>">
+            class="rfs-editor-remove-invalid-field"
+            aria-label="<%= h(l(:label_rfs_editor_remove_invalid_field)) %>">
       ×
     </button>
   <% end %>

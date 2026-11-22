@@ -1,7 +1,7 @@
 require File.expand_path('../../../../test/test_helper', __dir__)
 require 'digest'
 
-class RedmineFormSectionsProSaveConflictTest < Redmine::IntegrationTest
+class RedmineFormSectionsEditorSaveConflictTest < Redmine::IntegrationTest
 
   def test_stale_fingerprint_rejects_update
     log_user('admin', 'admin')
@@ -33,7 +33,7 @@ class RedmineFormSectionsProSaveConflictTest < Redmine::IntegrationTest
     Setting.plugin_redmine_form_sections = settings
 
     # Tentative d'enregistrement depuis l'ancienne version.
-    patch rfs_pro_save_path(tracker_id: tracker.id),
+    patch rfs_editor_save_path(tracker_id: tracker.id),
           params: {
             yaml_fingerprint: Digest::SHA256.hexdigest(initial_yaml),
             sections_json: [
@@ -42,14 +42,14 @@ class RedmineFormSectionsProSaveConflictTest < Redmine::IntegrationTest
           }
 
     # L'enregistrement doit être refusé.
-    assert_redirected_to rfs_pro_path(tracker_id: tracker.id)
+    assert_redirected_to rfs_editor_path(tracker_id: tracker.id)
 
     # La configuration concurrente doit être conservée.
     assert_equal concurrent_yaml,
                  Setting.plugin_redmine_form_sections['layouts_yaml']
 
     assert_equal(
-      I18n.t(:error_rfs_pro_configuration_changed),
+      I18n.t(:error_rfs_editor_configuration_changed),
       flash[:error]
     )
 

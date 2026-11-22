@@ -1,9 +1,0 @@
-trackers:
-  1:
-    - title: "Application"
-      left: [1]
-      right: [2]
-
-    - title: "Client"
-      left: [3]
-      right: [4]
