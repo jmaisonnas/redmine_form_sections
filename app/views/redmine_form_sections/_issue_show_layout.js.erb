@@ -71,10 +71,12 @@ function arrangeIssueShowFields(document) {
 
   const fields = [];
   if (ordinary) {
-    const [left, right] = ordinary.children;
-    if (ordinary.children.length !== 2 || !left.matches('.splitcontentleft') || !right.matches('.splitcontentright')) return;
+    // Redmine 4.1 uses splitcontentleft for both columns. Keep their DOM order.
+    const columns = [...ordinary.children];
+    if (columns.length !== 2 ||
+        columns.some(column => !column.matches('div') || !column.matches('.splitcontentleft, .splitcontentright'))) return;
 
-    for (const node of [...left.children, ...right.children]) {
+    for (const node of columns.flatMap(column => [...column.children])) {
       const id = fieldId(node);
       if (!id || !node.querySelector(':scope > .label') || !node.querySelector(':scope > .value')) return;
 

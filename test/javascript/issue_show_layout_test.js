@@ -31,6 +31,7 @@ class FixtureNode {
   dispatchEvent(event) { (this.listeners[event.type] || []).forEach(callback => callback(event)); }
 
   matches(selector) {
+    if (selector.includes(', ')) return selector.split(', ').some(part => this.matches(part));
     if (selector.startsWith('#')) return this.id === selector.slice(1);
     if (selector.startsWith('.')) return selector.slice(1).split('.').every(name => this.classList.includes(name));
     if (selector === 'input[type="checkbox"]') return this.tag === 'input' && this.type === 'checkbox';
@@ -41,8 +42,7 @@ class FixtureNode {
     const descendants = this.children.flatMap(child => [child, ...child.querySelectorAll('*')]);
     if (selector === '*') return descendants;
 
-    const selectors = selector.split(', ');
-    return descendants.filter(child => selectors.some(part => child.matches(part)));
+    return descendants.filter(child => child.matches(selector));
   }
 
   querySelector(selector) {
@@ -75,7 +75,7 @@ class FixtureNode {
   }
 }
 
-function issueFixture(sections, { ordinary = [1, 2], wide = [3, 4] } = {}) {
+function issueFixture(sections, { ordinary = [1, 2], wide = [3, 4], rightClass = 'splitcontentright' } = {}) {
   const document = new FixtureNode('document');
   document.defaultView = new FixtureNode('window');
   document.createElement = tag => new FixtureNode(tag);
@@ -86,13 +86,13 @@ function issueFixture(sections, { ordinary = [1, 2], wide = [3, 4] } = {}) {
   const core = add(attributes, 'div', 'splitcontent');
   const coreLeft = add(core, 'div', 'splitcontentleft');
   add(coreLeft, 'div', 'attribute status');
-  add(core, 'div', 'splitcontentright');
+  add(core, 'div', rightClass);
   const fields = {};
 
   if (ordinary.length) {
     const block = add(attributes, 'div', 'splitcontent');
     const left = add(block, 'div', 'splitcontentleft');
-    const right = add(block, 'div', 'splitcontentright');
+    const right = add(block, 'div', rightClass);
     ordinary.forEach((id, index) => {
       const node = fields[id] = add(index < Math.ceil(ordinary.length / 2) ? left : right, 'div', `attribute cf_${id}`);
       add(node, 'div', 'label');
@@ -134,6 +134,36 @@ function testIssueShowLayout(arrangeIssueShowFields) {
   }
   function snapshot(node) {
     return JSON.stringify([node.tag, node.id, node.className, node.textContent, node.checked, node.dataset, node.nodes.map(snapshot)]);
+  }
+
+  for (const [version, rightClass] of [['4.1.2', 'splitcontentleft'], ['7.0.3', 'splitcontentright']]) {
+    const fixture = issueFixture([{ title: 'Mixed', left: [1, 3], right: [6] }], {
+      ordinary: [1, 2, 5, 6, 7, 8], rightClass
+    });
+    const core = fixture.attributes.firstElementChild;
+    const nativeCore = snapshot(core);
+    fixture.fields[6].querySelector(':scope > .value').textContent = 'Set';
+    arrangeIssueShowFields(fixture.document);
+
+    const [control, section, other] = fixture.attributes.children[1].children;
+    const checkbox = control?.firstElementChild;
+    check(checkbox?.checked, `Redmine ${version}: sections render with the filter checked`);
+    check(fixture.attributes.firstElementChild === core && snapshot(core) === nativeCore,
+          `Redmine ${version}: native attributes stay in place`);
+    check(section.querySelector(':scope > .splitcontent > .splitcontentleft').firstElementChild === fixture.fields[1] &&
+          section.querySelector(':scope > .splitcontent > .splitcontentright').firstElementChild === fixture.fields[6] &&
+          section.children[2].firstElementChild === fixture.fields[3],
+          `Redmine ${version}: ordinary and full-width fields reach their configured positions`);
+    const unclassified = other.querySelectorAll('.attribute');
+    check(other.firstElementChild.textContent === 'Autres champs' &&
+          unclassified.length === 5 && [2, 5, 7, 8, 4].every((id, index) => unclassified[index] === fixture.fields[id]),
+          `Redmine ${version}: unclassified fields keep native order, with full-width fields last`);
+    check(fixture.fields[1].matches('.rfs-hidden-by-filter') && !fixture.fields[6].matches('.rfs-hidden-by-filter') &&
+          other.matches('.rfs-hidden-by-filter'), `Redmine ${version}: the filter hides empty fields and sections`);
+    checkbox.checked = false;
+    checkbox.dispatchEvent({ type: 'change' });
+    check(!fixture.document.querySelectorAll('.rfs-hidden-by-filter').length,
+          `Redmine ${version}: unchecking restores all fields and sections`);
   }
 
   const mixed = issueFixture([
@@ -229,6 +259,15 @@ function testIssueShowLayout(arrangeIssueShowFields) {
     ['empty layout', fixture => { fixture.start.dataset.sections = '[]'; }],
     ['malformed layout', fixture => { fixture.start.dataset.sections = '['; }],
     ['unexpected structure', fixture => { fixture.fields[1].parentNode.className = 'unexpected'; }],
+    ['unexpected third column', fixture => {
+      fixture.fields[1].parentNode.parentNode.appendChild(new FixtureNode('div', 'splitcontentleft'));
+    }],
+    ['ambiguous split block', fixture => {
+      fixture.attributes.insertBefore(new FixtureNode('div', 'splitcontent'), fixture.start);
+    }],
+    ['non-custom attribute in ordinary block', fixture => {
+      fixture.fields[1].parentNode.appendChild(new FixtureNode('div', 'attribute priority'));
+    }],
     ['duplicate field ID', fixture => { fixture.fields[2].className = 'attribute cf_1'; }],
     ['no fields', fixture => { Object.values(fixture.fields).forEach(field => field.remove()); }]
   ]) {
