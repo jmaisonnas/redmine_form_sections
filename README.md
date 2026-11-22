@@ -58,7 +58,7 @@ The layout was checked on Redmine 7.0.3 with the default theme and Modern Redmin
 
 ## Compatibility
 
-Plugin version: **1.0.0**
+Plugin version: **1.1.0**
 
 | Redmine version | Validation performed |
 | --- | --- |
@@ -110,7 +110,7 @@ Section headings are displayed in uppercase. Their saved text is preserved.
 
 ### Visual editor
 
-The **visual editor is included in Redmine Form Sections 1.0.0**. No additional plugin is needed.
+The **visual editor has been included in Redmine Form Sections since version 1.0.0**. No additional plugin is needed.
 
 Open **Administration > Form Sections** to configure the sections for a tracker without editing YAML manually.
 
@@ -158,12 +158,12 @@ Before upgrading, we recommend that you:
 3. Back up the currently installed plugin directory.
 4. Plan for a Redmine restart.
 
-### Procedure (including upgrades from 0.1.1)
+### Procedure (including upgrades from 0.1.1 and 1.0.0)
 
 1. Stop the affected Redmine instances using your usual operational procedure.
 2. Replace the `plugins/redmine_form_sections` directory with the new version, keeping exactly the same directory name.
 3. Restart Redmine.
-4. In **Administration > Plugins**, verify that version 1.0.0 is detected and that only one Redmine Form Sections plugin is installed.
+4. In **Administration > Plugins**, verify that version 1.1.0 is detected and that only one Redmine Form Sections plugin is installed.
 5. Confirm that the existing YAML configuration is preserved, the visual editor opens, and issues display correctly.
 
 ### Preserving the configuration
@@ -180,7 +180,7 @@ However, all application instances must be restarted to load the new version.
 
 ### Database migration
 
-Upgrading from version 0.1.1 to 1.0.0 does not require a database migration. The existing YAML configuration format is retained.
+Upgrading to version 1.1.0 from either 0.1.1 or 1.0.0 does not require a database migration. The existing YAML configuration format is retained.
 
 ### Rollback
 

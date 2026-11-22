@@ -58,7 +58,7 @@ Le rendu a été vérifié sur Redmine 7.0.3 avec le thème par défaut et Moder
 
 ## Compatibilité
 
-Version du plugin : **1.0.0**
+Version du plugin : **1.1.0**
 
 | Version de Redmine | Validation effectuée |
 | --- | --- |
@@ -110,7 +110,7 @@ Les titres des sections s'affichent en majuscules. Le texte enregistré dans la 
 
 ### Éditeur graphique
 
-**L'éditeur graphique est intégré à Redmine Form Sections 1.0.0.** Aucun plugin complémentaire n'est nécessaire.
+**L'éditeur graphique est intégré à Redmine Form Sections depuis la version 1.0.0.** Aucun plugin complémentaire n'est nécessaire.
 
 Accéder à **Administration > Form Sections** pour configurer les sections d'un tracker sans modifier manuellement le YAML.
 
@@ -158,12 +158,12 @@ Avant de mettre à jour le plugin, il est recommandé de :
 3. Sauvegarder le répertoire du plugin actuellement installé.
 4. Prévoir un redémarrage de Redmine.
 
-### Procédure (y compris depuis la version 0.1.1)
+### Procédure (y compris depuis les versions 0.1.1 et 1.0.0)
 
 1. Arrêter les instances Redmine concernées selon la procédure d'exploitation habituelle.
 2. Remplacer le répertoire `plugins/redmine_form_sections` par celui de la nouvelle version, en conservant exactement le même nom de répertoire.
 3. Redémarrer Redmine.
-4. Dans **Administration > Plugins**, vérifier que la version 1.0.0 est détectée et qu'un seul plugin Redmine Form Sections est installé.
+4. Dans **Administration > Plugins**, vérifier que la version 1.1.0 est détectée et qu'un seul plugin Redmine Form Sections est installé.
 5. Vérifier la conservation de la configuration YAML, l'ouverture de l'éditeur graphique et la présentation des tickets.
 
 ### Conservation de la configuration
@@ -180,7 +180,7 @@ En revanche, toutes les instances applicatives doivent être redémarrées afin 
 
 ### Migration de base de données
 
-Le passage de la version 0.1.1 à la version 1.0.0 ne nécessite aucune migration de base de données. Le format de configuration YAML existant est conservé.
+Le passage à la version 1.1.0 depuis les versions 0.1.1 ou 1.0.0 ne nécessite aucune migration de base de données. Le format de configuration YAML existant est conservé.
 
 ### Retour arrière
 
