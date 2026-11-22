@@ -2,7 +2,7 @@
 
 require 'yaml'
 
-module RedmineFormSectionsPro
+module RedmineFormSections
   class LayoutEditor
 
     def self.build_yaml(yaml_text:, tracker_id:, sections:)

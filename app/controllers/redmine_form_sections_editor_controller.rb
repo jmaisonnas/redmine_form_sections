@@ -1,6 +1,6 @@
 require 'digest'
 
-class RedmineFormSectionsProController < ApplicationController
+class RedmineFormSectionsEditorController < ApplicationController
   layout 'admin'
 
   before_action :require_admin
@@ -70,22 +70,22 @@ class RedmineFormSectionsProController < ApplicationController
     current_fingerprint = Digest::SHA256.hexdigest(yaml_text.to_s)
 
     if params[:yaml_fingerprint].to_s != current_fingerprint
-      flash[:error] = l(:error_rfs_pro_configuration_changed)
+      flash[:error] = l(:error_rfs_editor_configuration_changed)
 
-      return redirect_to rfs_pro_path(tracker_id: tracker.id)
+      return redirect_to rfs_editor_path(tracker_id: tracker.id)
     end
 
     # Récupérer la disposition complète transmise par l'éditeur.
     sections = JSON.parse(params[:sections_json].to_s)
 
     unless sections.is_a?(Array)
-      flash[:error] = l(:error_rfs_pro_invalid_layout)
+      flash[:error] = l(:error_rfs_editor_invalid_layout)
 
-      return redirect_to rfs_pro_path(tracker_id: tracker.id)
+      return redirect_to rfs_editor_path(tracker_id: tracker.id)
     end
 
     # Construire et valider le nouveau YAML.
-    new_yaml = RedmineFormSectionsPro::LayoutEditor.build_yaml(
+    new_yaml = RedmineFormSections::LayoutEditor.build_yaml(
       yaml_text: yaml_text,
       tracker_id: tracker.id,
       sections: sections
@@ -98,13 +98,13 @@ class RedmineFormSectionsProController < ApplicationController
 
     flash[:notice] = l(:notice_successful_update)
 
-    redirect_to rfs_pro_path(tracker_id: tracker.id)
+    redirect_to rfs_editor_path(tracker_id: tracker.id)
 
   rescue JSON::ParserError
 
-    flash[:error] = l(:error_rfs_pro_invalid_data)
+    flash[:error] = l(:error_rfs_editor_invalid_data)
 
-    redirect_to rfs_pro_path(tracker_id: params[:tracker_id])
+    redirect_to rfs_editor_path(tracker_id: params[:tracker_id])
 
   rescue RedmineFormSections::LayoutProvider::InvalidConfiguration => e
 
@@ -113,7 +113,7 @@ class RedmineFormSectionsProController < ApplicationController
       **e.interpolation
     )
 
-    redirect_to rfs_pro_path(tracker_id: params[:tracker_id])
+    redirect_to rfs_editor_path(tracker_id: params[:tracker_id])
   end
 
 end

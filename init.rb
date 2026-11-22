@@ -16,9 +16,9 @@ Redmine::Plugin.register :redmine_form_sections do
 
   # Accès à l'éditeur graphique depuis le menu Administration.
   menu :admin_menu,
-       :redmine_form_sections_pro,
-       { controller: 'redmine_form_sections_pro', action: 'index' },
-       caption: :label_rfs_pro_admin,
+       :redmine_form_sections_editor,
+       { controller: 'redmine_form_sections_editor', action: 'index' },
+       caption: :label_rfs_editor_admin,
        icon: 'custom-fields',
        html: { class: 'icon icon-custom-fields' }
 
@@ -29,7 +29,7 @@ end
 
 require_relative 'lib/redmine_form_sections/hooks'
 require_relative 'lib/redmine_form_sections/layout_provider'
-require_relative 'lib/redmine_form_sections_pro/layout_editor'
+require_relative 'lib/redmine_form_sections/layout_editor'
 require_relative 'lib/redmine_form_sections/settings_controller_patch'
 
 unless SettingsController.included_modules.include?(

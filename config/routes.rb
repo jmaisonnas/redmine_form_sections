@@ -3,10 +3,10 @@ get 'redmine_form_sections/export',
     as: :rfs_export
 
 # Éditeur graphique des sections.
-get 'redmine_form_sections_pro',
-    to: 'redmine_form_sections_pro#index',
-    as: :rfs_pro
+get 'redmine_form_sections/editor',
+    to: 'redmine_form_sections_editor#index',
+    as: :rfs_editor
 
-patch 'redmine_form_sections_pro',
-      to: 'redmine_form_sections_pro#update',
-      as: :rfs_pro_save
+patch 'redmine_form_sections/editor',
+      to: 'redmine_form_sections_editor#update',
+      as: :rfs_editor_save

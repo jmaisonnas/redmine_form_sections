@@ -9,19 +9,19 @@ class RedmineFormSectionsInvalidConfigurationTest < Redmine::IntegrationTest
     log_user('admin', 'admin')
 
     with_settings(plugin_redmine_form_sections: { 'layouts_yaml' => invalid_yaml }) do
-      get rfs_pro_path
+      get rfs_editor_path
       assert_response :success
-      assert_select '.rfs-pro-invalid-yaml-warning[role="alert"]', count: 1
+      assert_select '.rfs-editor-invalid-yaml-warning[role="alert"]', count: 1
 
-      get rfs_pro_path(tracker_id: issue.tracker_id)
+      get rfs_editor_path(tracker_id: issue.tracker_id)
       assert_response :success
-      assert_select '.rfs-pro-invalid-yaml-warning[role="alert"]', count: 1
-      assert_select '#rfs-pro-section-list fieldset', count: 0
+      assert_select '.rfs-editor-invalid-yaml-warning[role="alert"]', count: 1
+      assert_select '#rfs-editor-section-list fieldset', count: 0
 
-      patch rfs_pro_save_path(tracker_id: issue.tracker_id),
+      patch rfs_editor_save_path(tracker_id: issue.tracker_id),
             params: { yaml_fingerprint: Digest::SHA256.hexdigest(invalid_yaml),
                       sections_json: [{ title: 'Replacement', left: [1] }].to_json }
-      assert_redirected_to rfs_pro_path(tracker_id: issue.tracker_id)
+      assert_redirected_to rfs_editor_path(tracker_id: issue.tracker_id)
       assert flash[:error].present?
       assert_equal invalid_yaml, Setting.plugin_redmine_form_sections['layouts_yaml']
     end
@@ -33,11 +33,11 @@ class RedmineFormSectionsInvalidConfigurationTest < Redmine::IntegrationTest
     log_user('admin', 'admin')
 
     with_settings(plugin_redmine_form_sections: { 'layouts_yaml' => yaml }) do
-      patch rfs_pro_save_path(tracker_id: tracker.id),
+      patch rfs_editor_save_path(tracker_id: tracker.id),
             params: { yaml_fingerprint: Digest::SHA256.hexdigest(yaml),
                       sections_json: [{ title: 'Empty section', left: [] }].to_json }
 
-      assert_redirected_to rfs_pro_path(tracker_id: tracker.id)
+      assert_redirected_to rfs_editor_path(tracker_id: tracker.id)
       assert_equal I18n.t(:error_rfs_yaml_empty_section, tracker_id: tracker.id, title: 'Empty section'), flash[:error]
       assert_equal yaml, Setting.plugin_redmine_form_sections['layouts_yaml']
     end
